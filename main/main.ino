@@ -53,7 +53,7 @@ void setup() {
   for (int i=0; i<6; i++){
     pinMode(motorPin[i], OUTPUT);
   }
- }
+}
 /*////////////////////////////
   ループ関数の開始
   /*////////////////////////////
@@ -70,11 +70,11 @@ void loop() {
 void XYtoRT(vector *Data){
   Data->R = sqrt(pow(Data->X, 2.0) + pow(Data->Y, 2.0));
   Data->T = atan2(Data->Y, Data->X) / M_PI;
-  }
+}
 void RTtoXY(vector *Data){
   Data->X = Data->R * cos(Data->T * M_PI);
   Data->Y = Data->R * sin(Data->T * M_PI);
-  }
+}
 
 
 //回転しながら動く(動く方向, 回転する角度(回転しないのも含む))
@@ -88,13 +88,7 @@ void move_robot(vector substantial_mov, float rotate) {
   float delay_value;
 
   //回転を機体からみたものに戻す
-  substantial_mov_motor.R = substantial_mov.R;
-  substantial_mov_motor.T = substantial_mov.T - rotation;
-  RTtoXY(&substantial_mov_motor);
-  /*/原点を機体の中心からモーターの中心に変換
-  substantial_mov_motor.X = substantial_mov_motor.X - motor_center.X;
-  substantial_mov_motor.Y = substantial_mov_motor.Y - motor_center.Y;
-  XYtoRT(&substantial_mov_motor);/*/
+  //原点を機体の中心からモーターの中心に変換
   
   centerR = substantial_mov_motor.R / sqrt (2.00  -  2 * cos (rotate*M_PI) );
   
@@ -141,10 +135,6 @@ void move_robot(vector substantial_mov, float rotate) {
   mov(V, delay_value);
   
   //記録をとる
-  absolute.X += substantial_mov.X;
-  absolute.Y += substantial_mov.Y;
-  XYtoRT(&absolute);
-  rotation += rotate;
 }
 
 
@@ -203,21 +193,7 @@ void move_rotate(vector center, float rotate) {
 
   mov(V, delay_value); //動かす
 
-  
-
   //記録をとる
-  if (cos(rotate*M_PI) == 0){
-    absolute_move.R = 2 * center.R;
-  }else{
-    absolute_move.R = sqrt( 2 * pow(center.R, 2.0) * (1 - cos(rotate*M_PI) ));
-  }
-  absolute_move.T = center.T - acos(sqrt(2  -  2 * cos(rotate*M_PI) ) / 2) / M_PI + rotation;
-  RTtoXY(&absolute_move);
-  
-  absolute.X += absolute_move.X;
-  absolute.Y += absolute_move.Y;
-  XYtoRT(&absolute);
-  rotation += rotate;
 }
 
 
@@ -254,5 +230,3 @@ void mov_stop(){
     analogWrite(motorPin[i], 255);
   }
 }
-
-
