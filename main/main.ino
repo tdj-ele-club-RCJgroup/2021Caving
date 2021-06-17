@@ -18,9 +18,9 @@ const vector robot_center      = {0, 0, 0, 0};           //ロボットの中心
 const vector motor_center      = {0, -2.494,  2.494, 0}; //ロボットの中心からみたモーターの中心の場所
 
 //モーター
-const uint8_t motorPin[6]         = {6,7,4,5,3,2};         //モーターの制御ピン
-const float   motor_[3]           = {6.611, 10.28, 10.28}; //モーターの中心からの距離[cm]
-const float   motor_character[3]  = {1.000, 1.000, 0.700}; //モーターの誤差補正
+const uint8_t motorPin[8]         = {6,7,4,5,3,2,1,0};         //モーターの制御ピン
+const float   motor_[4]           = {0, 0, 0, 0}; //モーターの中心からの距離[cm]
+const float   motor_character[4]  = {1.000, 1.000, 1.000, 1.000}; //モーターの誤差補正
 
 
 /*////////////////////////////
@@ -77,53 +77,31 @@ void RTtoXY(vector *Data){
 }
 
 
-//回転しながら動く(動く方向, 回転する角度(回転しないのも含む))
-void move_robot(vector substantial_mov, float rotate) {
-  float centerR;
-  int   norotate = 1;
-  vector actual_move;  //実際に動こうとする方向
-  vector substantial_mov_motor;  //回転を機体からみたものに戻し、原点を機体の中心からモーターの中心に変換したもの
-  vector absolute_move; 
-  float V[3]; //モーターごとの動かす量
+//動く(動く方向)
+void move_robot(vector substantial_mov) {
+  vector motor_mov; //軸を45度回転し、モーターの動かす量を求める
+  vector absolute_move;
+  float V[4]; //モーターごとの動かす量
   float delay_value;
 
   //回転を機体からみたものに戻す
   //原点を機体の中心からモーターの中心に変換
-  
-  centerR = substantial_mov_motor.R / sqrt (2.00  -  2 * cos (rotate*M_PI) );
-  
-  if (rotate > 0){
-    actual_move.T = substantial_mov_motor.T + acos(sqrt(2.00  -  2 * cos(rotate*M_PI) ) / 2.00) /M_PI  - 1;
-  }else if (rotate < 0){
-    actual_move.T = substantial_mov_motor.T - acos(sqrt(2.00  -  2 * cos(rotate*M_PI) ) / 2.00) /M_PI  + 1;
-  }else{
-    actual_move.T = substantial_mov_motor.T;
-    norotate = 0;
-    centerR  = 1;
-  }
-  
-  actual_move.R = 1;
-  RTtoXY(&actual_move);
-  
-  Serial.println("actual_move.R ");
-  Serial.println(actual_move.R);
-  Serial.println("actual_move.T ");
-  Serial.println(actual_move.T);
-  Serial.println("centerR ");
-  Serial.println(centerR);
-  
-  V[0] = ((               actual_move.X                                    ) * centerR  + motor_[0] * norotate) / (motor_[0] * norotate  + centerR);
-  V[1] = ((-1.00 / 2.00 * actual_move.X + sqrt(3.00) / 2.00 * actual_move.Y) * centerR  + motor_[1] * norotate) / (motor_[1] * norotate  + centerR);
-  V[2] = ((-1.00 / 2.00 * actual_move.X - sqrt(3.00) / 2.00 * actual_move.Y) * centerR  + motor_[2] * norotate) / (motor_[2] * norotate  + centerR);
-  
-  if (rotate == 0){
-    delay_value = substantial_mov.R;
-  }else{
-    delay_value = rotate * M_PI * centerR;
-  }
+
+  //軸を45度回転し、モーターの動かす量を求める
+  motor_mov.R = substantial_mov.R;
+  motor_mov.T = substantial_mov.T + 0.125;
+  RTtoXY(motor_mov);
+
+  //モーターごとの動かす量
+  V[0] =  motor_mov.Y;
+  V[1] = -motor_mov.X;
+  V[2] = -motor_mov.Y;
+  V[3] =  motor_mov.X;
+
+  delay_value = substantial_mov.R;
 
   Serial.println();
-  for(int i=0; i<3; i++){
+  for(int i=0; i<4; i++){
     Serial.print("V");
     Serial.print(i);
     Serial.print(" ");
@@ -199,9 +177,10 @@ void move_rotate(vector center, float rotate) {
 
 //モーター関数用
 void mov(float V[], float Delay){
-  
-  uint8_t pin[6];
-  for(int i=0; i<3; i++){
+
+  //プラスとマイナスを分ける
+  uint8_t pin[8];
+  for(int i=0; i<4; i++){
     int j = i*2;
     if (V[i] > 0){pin[j] = 0; pin[j+1] = 1;}
     else {pin[j] = 1; pin[j+1] = 0; V[i] = -V[i];}
@@ -210,9 +189,10 @@ void mov(float V[], float Delay){
     Serial.println(V[i] * motor_PWM * motor_character[i]);
   }
 
+  //出力
   const unsigned long startTime_us = millis();
   do{
-    for(int i=0; i<3; i++){
+    for(int i=0; i<4; i++){
       int j = i*2;
       analogWrite(motorPin[pin[j]   + j],  V[i] * motor_PWM * motor_character[i]);   //動かす
       analogWrite(motorPin[pin[j+1] + j],  0);
