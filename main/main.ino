@@ -90,15 +90,15 @@ void move_robot(vector substantial_mov) {
   //軸を45度回転し、モーターの動かす量を求める
   motor_mov.R = substantial_mov.R;
   motor_mov.T = substantial_mov.T + 0.125;
-  RTtoXY(motor_mov);
+  RTtoXY(&motor_mov);
 
-  //モーターごとの動かす量
-  V[0] =  motor_mov.Y;
-  V[1] = -motor_mov.X;
-  V[2] = -motor_mov.Y;
-  V[3] =  motor_mov.X;
+  //モーターごとの動かす量(単位ベクトル)
+  V[0] =  motor_mov.Y / motor_mov.R;
+  V[1] = -motor_mov.X / motor_mov.R;
+  V[2] = -motor_mov.Y / motor_mov.R;
+  V[3] =  motor_mov.X / motor_mov.R;
 
-  delay_value = substantial_mov.R;
+  delay_value = motor_mov.R;
 
   Serial.println();
   for(int i=0; i<4; i++){
@@ -121,7 +121,8 @@ void move_rotate(vector center, float rotate) {
   vector actual_move; //実際に動こうとする方向
   vector center_motor;  //原点を機体の中心からモーターの中心に変換したもの
   vector absolute_move; //機体の向きを加えたもの
-  float V[3]; //モーターごとの動かす量
+  vector motor_mov; //軸を45度回転し、モーターの動かす量を求める
+  float V[4]; //モーターごとの動かす量
   float delay_value; //どれだけ動くか
   
   center_motor.X = center.X - motor_center.X;
@@ -152,11 +153,18 @@ void move_rotate(vector center, float rotate) {
 
   Serial.print("center_motor.R ");
   Serial.println(center_motor.R);
+
   
-  //モーターごとの動かす量を代入
-  V[0] = ((               actual_move.X                                    ) * center_motor.R  + motor_[0]) / (motor_[0] + center_motor.R);
-  V[1] = ((-1.00 / 2.00 * actual_move.X + sqrt(3.00) / 2.00 * actual_move.Y) * center_motor.R  + motor_[1]) / (motor_[1] + center_motor.R);
-  V[2] = ((-1.00 / 2.00 * actual_move.X - sqrt(3.00) / 2.00 * actual_move.Y) * center_motor.R  + motor_[2]) / (motor_[2] + center_motor.R);
+  //軸を45度回転し、モーターの動かす量を求める
+  motor_mov.R = actual_move.R;
+  motor_mov.T = actual_move.T + 0.125;
+  RTtoXY(&motor_mov);
+  
+  //モーターごとの動かす量(単位ベクトル)
+  V[0] = ( motor_mov.Y * center_motor.R  + motor_[0]) / (motor_[0] + center_motor.R);
+  V[1] = (-motor_mov.X * center_motor.R  + motor_[1]) / (motor_[1] + center_motor.R);
+  V[2] = (-motor_mov.Y * center_motor.R  + motor_[2]) / (motor_[2] + center_motor.R);
+  V[3] = ( motor_mov.X * center_motor.R  + motor_[3]) / (motor_[3] + center_motor.R);
   delay_value = center_motor.R * rotate * M_PI;
   
   Serial.println();
