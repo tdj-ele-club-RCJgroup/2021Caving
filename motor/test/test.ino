@@ -59,7 +59,9 @@ void setup() {
   /*////////////////////////////
   
 void loop() {
-  
+  vector test = {0,0,20,0.5};
+  RTtoXY(&test);
+  move_robot(test);
 }
 /*////////////////////////////
   関数の宣言開始
