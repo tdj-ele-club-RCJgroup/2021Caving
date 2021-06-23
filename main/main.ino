@@ -89,14 +89,14 @@ void move_robot(vector substantial_mov) {
 
   //軸を45度回転し、モーターの動かす量を求める
   motor_mov.R = substantial_mov.R;
-  motor_mov.T = substantial_mov.T + 0.125;
+  motor_mov.T = substantial_mov.T + 0.25;
   RTtoXY(&motor_mov);
 
   //モーターごとの動かす量(単位ベクトル)
-  V[0] =  motor_mov.Y / motor_mov.R;
-  V[1] = -motor_mov.X / motor_mov.R;
-  V[2] = -motor_mov.Y / motor_mov.R;
-  V[3] =  motor_mov.X / motor_mov.R;
+  V[0] = -motor_mov.X / motor_mov.R;
+  V[1] = -motor_mov.Y / motor_mov.R;
+  V[2] =  motor_mov.X / motor_mov.R;
+  V[3] =  motor_mov.Y / motor_mov.R;
 
   delay_value = motor_mov.R;
 
