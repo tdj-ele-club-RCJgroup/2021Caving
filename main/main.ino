@@ -157,14 +157,14 @@ void move_rotate(vector center, float rotate) {
   
   //軸を45度回転し、モーターの動かす量を求める
   motor_mov.R = actual_move.R;
-  motor_mov.T = actual_move.T + 0.125;
+  motor_mov.T = actual_move.T + 0.25;
   RTtoXY(&motor_mov);
   
   //モーターごとの動かす量(単位ベクトル)
-  V[0] = ( motor_mov.Y * center_motor.R  + motor_[0]) / (motor_[0] + center_motor.R);
-  V[1] = (-motor_mov.X * center_motor.R  + motor_[1]) / (motor_[1] + center_motor.R);
-  V[2] = (-motor_mov.Y * center_motor.R  + motor_[2]) / (motor_[2] + center_motor.R);
-  V[3] = ( motor_mov.X * center_motor.R  + motor_[3]) / (motor_[3] + center_motor.R);
+  V[0] = (-motor_mov.X * center_motor.R  + motor_[0]) / (motor_[0] + center_motor.R);
+  V[1] = (-motor_mov.Y * center_motor.R  + motor_[1]) / (motor_[1] + center_motor.R);
+  V[2] = ( motor_mov.X * center_motor.R  + motor_[2]) / (motor_[2] + center_motor.R);
+  V[3] = ( motor_mov.Y * center_motor.R  + motor_[3]) / (motor_[3] + center_motor.R);
   delay_value = center_motor.R * rotate * M_PI;
   
   Serial.println();
