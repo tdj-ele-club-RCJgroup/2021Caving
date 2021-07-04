@@ -18,7 +18,7 @@ const vector robot_center      = {0, 0, 0, 0};           //ロボットの中心
 const vector motor_center      = {0, -2.494,  2.494, 0}; //ロボットの中心からみたモーターの中心の場所
 
 //モーター
-const uint8_t motorPin[8]         = {6,7,4,5,3,2,1,0};         //モーターの制御ピン
+const uint8_t motorPin[8]         = {7,8,10,11,12,13,5,6};         //モーターの制御ピン
 const float   motor_[4]           = {0, 0, 0, 0}; //モーターの中心からの距離[cm]
 const float   motor_character[4]  = {1.000, 1.000, 1.000, 1.000}; //モーターの誤差補正
 
