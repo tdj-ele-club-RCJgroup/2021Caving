@@ -15,22 +15,8 @@ void setup() {
 
 void loop() {
     for(int i=0; i<8; i=i+2){
-        analogWrite(motorPin[i],255);
-        analogWrite(motorPin[i+1],0);
-    }
-    delay(500);
-    for(int i=0; i<8; i=i+2){
-        analogWrite(motorPin[i],255);
-        analogWrite(motorPin[i+1],255);
-    }
-    delay(10);
-    for(int i=0; i<8; i=i+2){
         analogWrite(motorPin[i],0);
         analogWrite(motorPin[i+1],255);
-    }
-    delay(500);
-    for(int i=0; i<8; i=i+2){
-        analogWrite(motorPin[i],255);
-        analogWrite(motorPin[i+1],255);
+        
     }
 }
