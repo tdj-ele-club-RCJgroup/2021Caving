@@ -1,16 +1,9 @@
-/*////////////////////////////
-  ライブラリなどの初期宣言
-  /*////////////////////////////
 typedef struct {
   float X; //直交座標のⅹ座標 [cm]
   float Y; //直交座標のＹ座標 [cm]
   float R; //　極座標のｒ（中心からの距離）[cm]
   float T; //　極座標のθ（中心から線を引いたときのｘ軸との角度）...ラジアン/π
   } vector;
-
-/*////////////////////////////
-  定数の宣言
-  /*////////////////////////////
 
 //メイン
 const vector ball_capture_area = {0, 11.405, 11.405, 0}; //ロボットの中心からみた補足エリアの場所
@@ -22,31 +15,18 @@ const uint8_t motorPin[8]         = {6,7,4,5,3,2,1,0};         //モーターの
 const float   motor_[4]           = {0, 0, 0, 0}; //モーターの中心からの距離[cm]
 const float   motor_character[4]  = {1.000, 1.000, 1.000, 1.000}; //モーターの誤差補正
 
-
-/*////////////////////////////
-  変数宣言開始
-  /*////////////////////////////
-
 //モーター
 int   motor_PWM         = 255;  //0~255のpwmの基準の値
 float motor_delay_ratio = 12;   //1cm進むのに待つ時間[ms]
 
-/*////////////////////////////
-  関数のプロトタイプ宣言開始
-  /*////////////////////////////
 void  XYtoRT(vector *Data);                               //ベクトルの変換
 void  RTtoXY(vector *Data);                               //    〃
 void  move_robot(vector substantial_mov, float rotate);   //回転しながら動く(動く方向, 回転する角度(回転しないのも含む))
 void  move_rotate(vector center, float rotate);           //回転する（回転の中心、角度）
 void  mov_stop();                                         //止まる
 void  mov(float V[], float Delay);                        //モーター関数用
-/*////////////////////////////
-  セットアップ関数の開始
-  /*////////////////////////////
 
 void setup() {
-  //シリアル通信を9600bpsで始める
-  //一応、テストなどの通信用
   Serial.begin(9600);
 
   //モーターのデジタルピン宣言
@@ -54,17 +34,9 @@ void setup() {
     pinMode(motorPin[i], OUTPUT);
   }
 }
-/*////////////////////////////
-  ループ関数の開始
-  /*////////////////////////////
   
 void loop() {
-  
 }
-/*////////////////////////////
-  関数の宣言開始
-  /*////////////////////////////
-
 
 //ベクトルの変換
 void XYtoRT(vector *Data){
@@ -76,11 +48,9 @@ void RTtoXY(vector *Data){
   Data->Y = Data->R * sin(Data->T * M_PI);
 }
 
-
-//動く(動く方向)
+//モータの出力計算(目標の座標/vectorは完全な形/)
 void move_robot(vector substantial_mov) {
-  vector motor_mov; //軸を45度回転し、モーターの動かす量を求める
-  vector absolute_move;
+  vector motor_mov; //座標軸を45度回転した後の座標
   float V[4]; //モーターごとの動かす量
   float delay_value;
 
@@ -98,8 +68,19 @@ void move_robot(vector substantial_mov) {
   V[2] =  motor_mov.X / motor_mov.R;
   V[3] =  motor_mov.Y / motor_mov.R;
 
-  delay_value = motor_mov.R;
+  delay_value = motor_mov.R;  //進む距離
 
+  //V[ ]の最大値を1にする
+  if(fabsf(motor_mov.X) >= fabsf(motor_mov.Y)){
+    for(int i = 0;i < 4; i++){
+      V[i] = V[i] / fabsf(motor_mov.X) * motor_PWM * motor_character[i];
+    }
+  }else{
+    for(int i = 0;i < 4; i++){
+      V[i] = V[i] / fabsf(motor_mov.Y) * motor_PWM * motor_character[i];
+    }
+  }
+  
   Serial.println();
   for(int i=0; i<4; i++){
     Serial.print("V");
@@ -107,14 +88,24 @@ void move_robot(vector substantial_mov) {
     Serial.print(" ");
     Serial.println(V[i]);
   }
-  Serial.print("delay_value ");
-  Serial.println(delay_value);
   
-  mov(V, delay_value);
-  
-  //記録をとる
+  //出力
+  for(int i = 0; i < 4; i++){
+    if (V[i] > 0){
+      analogWrite(motorPin[2*i],  V[i]);
+      analogWrite(motorPin[2*i+1],0);
+      Serial.print(motorPin[2*i]);
+      Serial.print(":");
+      Serial.println(V[i]);
+    }else{
+      analogWrite(motorPin[2*i],  0);
+      analogWrite(motorPin[2*i+1],V[i]);
+      Serial.print(pin[j] + j);
+      Serial.print(":");
+      Serial.println(V[i]);
+    }
+  }
 }
-
 
 //回転する（回転の中心、角度）
 void move_rotate(vector center, float rotate) {
@@ -133,7 +124,6 @@ void move_rotate(vector center, float rotate) {
   Serial.print("center_motor.T ");
   Serial.println(center_motor.T);
 
-  
   //実際に動こうとする方向を決める
   if (center_motor.R != 0){
     actual_move.R = 1;
@@ -154,7 +144,6 @@ void move_rotate(vector center, float rotate) {
   Serial.print("center_motor.R ");
   Serial.println(center_motor.R);
 
-  
   //軸を45度回転し、モーターの動かす量を求める
   motor_mov.R = actual_move.R;
   motor_mov.T = actual_move.T + 0.25;
@@ -183,19 +172,24 @@ void move_rotate(vector center, float rotate) {
 }
 
 
-//モーター関数用
+//モーター出力　　定められた距離進むまで待つ
 void mov(float V[], float Delay){
-
   //プラスとマイナスを分ける
-  uint8_t pin[8];
-  for(int i=0; i<4; i++){
+  uint8_t pin[8];  
+  for(int i = 0; i < 4; i++){
     int j = i*2;
-    if (V[i] > 0){pin[j] = 0; pin[j+1] = 1;}
-    else {pin[j] = 1; pin[j+1] = 0; V[i] = -V[i];}
+    if (V[i] > 0){
+      pin[j] = 0;
+      pin[j+1] = 1;
+    }else{
+      pin[j] = 1;
+      pin[j+1] = 0;
+      V[i] = -V[i];
+    }
     Serial.print(pin[j] + j);
     Serial.print(":");
     Serial.println(V[i] * motor_PWM * motor_character[i]);
-  }
+    }
 
   //出力
   const unsigned long startTime_us = millis();
