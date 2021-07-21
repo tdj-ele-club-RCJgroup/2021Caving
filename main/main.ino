@@ -48,11 +48,10 @@ void RTtoXY(vector *Data){
   Data->Y = Data->R * sin(Data->T * M_PI);
 }
 
-//モータの出力計算(目標の座標/vectorは完全な形/)
+//モータの出力計算(目標の座標/距離情報は無視)
 void move_robot(vector substantial_mov) {
   vector motor_mov; //座標軸を45度回転した後の座標
   float V[4]; //モーターごとの動かす量
-  float delay_value;
 
   //回転を機体からみたものに戻す
   //原点を機体の中心からモーターの中心に変換
@@ -71,13 +70,13 @@ void move_robot(vector substantial_mov) {
   delay_value = motor_mov.R;  //進む距離
 
   //V[ ]の最大値を1にする
-  if(fabsf(motor_mov.X) >= fabsf(motor_mov.Y)){
+  if(fabsf(V[0]) >= fabsf(V[1])){
     for(int i = 0;i < 4; i++){
-      V[i] = V[i] / fabsf(motor_mov.X) * motor_PWM * motor_character[i];
+      V[i] = V[i] / fabsf(V[0]) * motor_PWM * motor_character[i];
     }
   }else{
     for(int i = 0;i < 4; i++){
-      V[i] = V[i] / fabsf(motor_mov.Y) * motor_PWM * motor_character[i];
+      V[i] = V[i] / fabsf(V[1]) * motor_PWM * motor_character[i];
     }
   }
   
@@ -109,66 +108,8 @@ void move_robot(vector substantial_mov) {
 
 //回転する（回転の中心、角度）
 void move_rotate(vector center, float rotate) {
-  vector actual_move; //実際に動こうとする方向
-  vector center_motor;  //原点を機体の中心からモーターの中心に変換したもの
-  vector absolute_move; //機体の向きを加えたもの
-  vector motor_mov; //軸を45度回転し、モーターの動かす量を求める
   float V[4]; //モーターごとの動かす量
-  float delay_value; //どれだけ動くか
   
-  center_motor.X = center.X - motor_center.X;
-  center_motor.Y = center.Y - motor_center.Y;
-  XYtoRT(&center_motor);
-  Serial.print("center_motor.R ");
-  Serial.println(center_motor.R);
-  Serial.print("center_motor.T ");
-  Serial.println(center_motor.T);
-
-  //実際に動こうとする方向を決める
-  if (center_motor.R != 0){
-    actual_move.R = 1;
-  }else{
-    actual_move.R  = 0;
-    center_motor.R = motor_[0];
-  }
-  
-  if (rotate == 0){
-    return NULL;
-  }else if (rotate < 0){
-    actual_move.T = center_motor.T + 0.5;
-  }else if (rotate > 0){
-    actual_move.T = center_motor.T - 0.5;
-  }
-  RTtoXY(&actual_move);
-
-  Serial.print("center_motor.R ");
-  Serial.println(center_motor.R);
-
-  //軸を45度回転し、モーターの動かす量を求める
-  motor_mov.R = actual_move.R;
-  motor_mov.T = actual_move.T + 0.25;
-  RTtoXY(&motor_mov);
-  
-  //モーターごとの動かす量(単位ベクトル)
-  V[0] = (-motor_mov.X * center_motor.R  + motor_[0]) / (motor_[0] + center_motor.R);
-  V[1] = (-motor_mov.Y * center_motor.R  + motor_[1]) / (motor_[1] + center_motor.R);
-  V[2] = ( motor_mov.X * center_motor.R  + motor_[2]) / (motor_[2] + center_motor.R);
-  V[3] = ( motor_mov.Y * center_motor.R  + motor_[3]) / (motor_[3] + center_motor.R);
-  delay_value = center_motor.R * rotate * M_PI;
-  
-  Serial.println();
-  for(int i=0; i<3; i++){
-    Serial.print("V");
-    Serial.print(i);
-    Serial.print(" ");
-    Serial.println(V[i]);
-  }
-  Serial.print("delay_value ");
-  Serial.println(delay_value);
-
-  mov(V, delay_value); //動かす
-
-  //記録をとる
 }
 
 
