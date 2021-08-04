@@ -3,7 +3,7 @@ typedef struct {
   float Y; //直交座標のＹ座標 [cm]
   float R; //　極座標のｒ（中心からの距離）[cm]
   float T; //　極座標のθ（中心から線を引いたときのｘ軸との角度）...ラジアン/π
-  } vector;
+} vector;
 
 //メイン
 const vector ball_capture_area = {0, 11.405, 11.405, 0}; //ロボットの中心からみた補足エリアの場所
@@ -11,7 +11,7 @@ const vector robot_center      = {0, 0, 0, 0};           //ロボットの中心
 const vector motor_center      = {0, -2.494,  2.494, 0}; //ロボットの中心からみたモーターの中心の場所
 
 //モーター
-const uint8_t motorPin[8]         = {6,7,4,5,3,2,1,0};         //モーターの制御ピン
+const uint8_t motorPin[8]         = {7,8,10,11,12,13,5,6};         //モーターの制御ピン
 const float   motor_[4]           = {0, 0, 0, 0}; //モーターの中心からの距離[cm]
 const float   motor_character[4]  = {1.000, 1.000, 1.000, 1.000}; //モーターの誤差補正
 
@@ -36,6 +36,10 @@ void setup() {
 }
   
 void loop() {
+  vector aim;      //進みたい目的地
+  aim.R = 1;
+  aim.T = 1.5;       //前方向
+  move_robot(aim);
 }
 
 //ベクトルの変換
@@ -50,7 +54,7 @@ void RTtoXY(vector *Data){
 
 //モータの出力計算(目標の座標/距離情報は無視)
 void move_robot(vector substantial_mov) {
-  vector motor_mov; //座標軸を45度回転した後の座標
+  vector motor_mov; //座標軸を45度回転した後の座標を後で格納
   float V[4]; //モーターごとの動かす量
 
   //回転を機体からみたものに戻す
@@ -58,25 +62,39 @@ void move_robot(vector substantial_mov) {
 
   //軸を45度回転し、モーターの動かす量を求める
   motor_mov.R = substantial_mov.R;
+  Serial.println((String)"motor_mov.R = " + motor_mov.R);
   motor_mov.T = substantial_mov.T + 0.25;
+  Serial.println((String)"motor_mov.T = " + motor_mov.T);
   RTtoXY(&motor_mov);
 
   //モーターごとの動かす量(単位ベクトル)
-  V[0] = -motor_mov.X / motor_mov.R;
-  V[1] = -motor_mov.Y / motor_mov.R;
-  V[2] =  motor_mov.X / motor_mov.R;
-  V[3] =  motor_mov.Y / motor_mov.R;
+  V[0] = -motor_mov.Y / motor_mov.R;
+  V[1] =  motor_mov.X / motor_mov.R;
+  V[2] =  motor_mov.Y / motor_mov.R;
+  V[3] = -motor_mov.X / motor_mov.R;
 
-  delay_value = motor_mov.R;  //進む距離
+  //delay_value = motor_mov.R;  //進む距離
+
+   Serial.println();
+  for(int i=0; i<4; i++){
+    Serial.print("abV");
+    Serial.print(i);
+    Serial.print(" ");
+    Serial.println(V[i]);
+  }
 
   //V[ ]の最大値を1にする
   if(fabsf(V[0]) >= fabsf(V[1])){
+    float maximum = fabsf(V[0]);
     for(int i = 0;i < 4; i++){
-      V[i] = V[i] / fabsf(V[0]) * motor_PWM * motor_character[i];
+      V[i] = V[i] / maximum * motor_PWM * motor_character[i];
+      Serial.print("|V[0]| >= |V[1]|    : ");
+      Serial.println((String)"V[" + i + "]= " + V[i]);
     }
   }else{
+    float maximum = fabsf(V[1]);
     for(int i = 0;i < 4; i++){
-      V[i] = V[i] / fabsf(V[1]) * motor_PWM * motor_character[i];
+      V[i] = V[i] / maximum * motor_PWM * motor_character[i];
     }
   }
   
@@ -91,28 +109,26 @@ void move_robot(vector substantial_mov) {
   //出力
   for(int i = 0; i < 4; i++){
     if (V[i] > 0){
-      analogWrite(motorPin[2*i],  V[i]);
+      analogWrite(motorPin[2*i], V[i]);
       analogWrite(motorPin[2*i+1],0);
-      Serial.print(motorPin[2*i]);
-      Serial.print(":");
-      Serial.println(V[i]);
+      Serial.println((String)motorPin[2*i] + ":" + V[i]);
     }else{
       analogWrite(motorPin[2*i],  0);
-      analogWrite(motorPin[2*i+1],V[i]);
-      Serial.print(pin[j] + j);
-      Serial.print(":");
-      Serial.println(V[i]);
+      analogWrite(motorPin[2*i+1],-V[i]);
+      Serial.println((String)motorPin[2*i+1] + ":" + -V[i]);
     }
   }
 }
 
+/*
 //回転する（回転の中心、角度）
 void move_rotate(vector center, float rotate) {
   float V[4]; //モーターごとの動かす量
   
 }
+*/
 
-
+/*
 //モーター出力　　定められた距離進むまで待つ
 void mov(float V[], float Delay){
   //プラスとマイナスを分ける
@@ -143,8 +159,9 @@ void mov(float V[], float Delay){
   } while((millis() - startTime_us) < Delay * motor_delay_ratio);
   
   Serial.print("delay_value ");
-  Serial.println(Delay);//*/
+  Serial.println(Delay);
 }
+*/
 
 
 //止まる
