@@ -1,14 +1,8 @@
-//モーター
-const uint8_t motorPin[8]         = {5,6,7,8,10,11,12,13};         //モーターの制御ピン
+const int motorPin[8] = {7,8,10,11,12,13,5,6};
 
-
-void setup() {
-  //シリアル通信を9600bpsで始める
-  //一応、テストなどの通信用
+void setup(){
   Serial.begin(9600);
-
-  //モーターのデジタルピン宣言
-  for (int i=0; i<6; i++){
+  for(int i = 0; i < 8; i++){
     pinMode(motorPin[i], OUTPUT);
   }
 }
