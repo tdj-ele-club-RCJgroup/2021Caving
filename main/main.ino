@@ -11,7 +11,7 @@ const vector robot_center      = {0, 0, 0, 0};           //ロボットの中心
 const vector motor_center      = {0, -2.494,  2.494, 0}; //ロボットの中心からみたモーターの中心の場所
 
 //モーター
-const uint8_t motorPin[8]         = {7,8,10,11,12,13,5,6};         //モーターの制御ピン
+const uint8_t motorPin[8]         = {5,6,7,8,10,11,12,13};         //モーターの制御ピン
 const float   motor_[4]           = {0, 0, 0, 0}; //モーターの中心からの距離[cm]
 const float   motor_character[4]  = {1.000, 1.000, 1.000, 1.000}; //モーターの誤差補正
 
@@ -21,7 +21,7 @@ float motor_delay_ratio = 12;   //1cm進むのに待つ時間[ms]
 
 void  XYtoRT(vector *Data);                               //ベクトルの変換
 void  RTtoXY(vector *Data);                               //    〃
-void  move_robot(vector substantial_mov, float rotate);   //回転しながら動く(動く方向, 回転する角度(回転しないのも含む))
+void  move_robot(float Theta);                            //モータの出力計算(目標の方向)
 void  move_rotate(vector center, float rotate);           //回転する（回転の中心、角度）
 void  mov_stop();                                         //止まる
 void  mov(float V[], float Delay);                        //モーター関数用
@@ -38,8 +38,8 @@ void setup() {
 void loop() {
   vector aim;      //進みたい目的地
   aim.R = 1;
-  aim.T = 1.5;       //前方向
-  move_robot(aim);
+  aim.T = 0.5;       //前方向
+  move_robot(aim.T);
 }
 
 //ベクトルの変換
@@ -52,8 +52,8 @@ void RTtoXY(vector *Data){
   Data->Y = Data->R * sin(Data->T * M_PI);
 }
 
-//モータの出力計算(目標の座標/距離情報は無視)
-void move_robot(vector substantial_mov) {
+//モータの出力計算(目標の方向)
+void move_robot(float Theta) {
   vector motor_mov; //座標軸を45度回転した後の座標を後で格納
   float V[4]; //モーターごとの動かす量
 
@@ -61,9 +61,9 @@ void move_robot(vector substantial_mov) {
   //原点を機体の中心からモーターの中心に変換
 
   //軸を45度回転し、モーターの動かす量を求める
-  motor_mov.R = substantial_mov.R;
+  motor_mov.R = 1;
   Serial.println((String)"motor_mov.R = " + motor_mov.R);
-  motor_mov.T = substantial_mov.T + 0.25;
+  motor_mov.T = Theta + 0.25;
   Serial.println((String)"motor_mov.T = " + motor_mov.T);
   RTtoXY(&motor_mov);
 
