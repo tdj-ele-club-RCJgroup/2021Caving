@@ -18,7 +18,7 @@ const vector robot_center      = {0, 0, 0, 0};           //ロボットの中心
 const vector motor_center      = {0, -2.494,  2.494, 0}; //ロボットの中心からみたモーターの中心の場所
 
 //モーター
-const uint8_t motorPin[8]         = {7,8,10,11,12,13,5,6};         //モーターの制御ピン
+const uint8_t motorPin[8]         = {5,6,7,8,10,11,12,13};         //モーターの制御ピン
 const float   motor_[4]           = {0, 0, 0, 0}; //モーターの中心からの距離[cm]
 const float   motor_character[4]  = {1.000, 1.000, 1.000, 1.000}; //モーターの誤差補正
 
@@ -59,9 +59,14 @@ void setup() {
   /*////////////////////////////
   
 void loop() {
-  vector test = {0,0,20,0.5};
-  RTtoXY(&test);
-  move_robot(test);
+  for(int i=1; i<9; i++){
+    vector test = {0,0,1,0};
+    RTtoXY(&test);
+    move_robot(test);
+    mov_stop();
+    delay(500);
+  }
+  
 }
 /*////////////////////////////
   関数の宣言開始
