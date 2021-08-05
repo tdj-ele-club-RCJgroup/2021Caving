@@ -5,11 +5,6 @@ typedef struct {
   float T; //　極座標のθ（中心から線を引いたときのｘ軸との角度）...ラジアン/π
 } vector;
 
-//メイン
-const vector ball_capture_area = {0, 11.405, 11.405, 0}; //ロボットの中心からみた補足エリアの場所
-const vector robot_center      = {0, 0, 0, 0};           //ロボットの中心
-const vector motor_center      = {0, -2.494,  2.494, 0}; //ロボットの中心からみたモーターの中心の場所
-
 //モーター
 const uint8_t motorPin[8]         = {5,6,7,8,10,11,12,13};         //モーターの制御ピン
 const float   motor_[4]           = {0, 0, 0, 0}; //モーターの中心からの距離[cm]
