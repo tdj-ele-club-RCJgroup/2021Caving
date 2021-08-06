@@ -1,4 +1,4 @@
-const int motorPin[8] = {5,6,7,8,10,11,12,13};
+const int motorPin[8] = {7,8,10,11,12,13,5,6};
 
 void setup(){
   Serial.begin(9600);

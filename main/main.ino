@@ -6,7 +6,7 @@ typedef struct {
 } vector;
 
 //モーター
-const uint8_t motorPin[8]         = {5,6,7,8,10,11,12,13};         //モーターの制御ピン
+const uint8_t motorPin[8]         = {7,8,10,11,12,13,5,6};         //モーターの制御ピン
 const float   motor_[4]           = {0, 0, 0, 0}; //モーターの中心からの距離[cm]
 const float   motor_character[4]  = {1.000, 1.000, 1.000, 1.000}; //モーターの誤差補正
 
