@@ -115,49 +115,11 @@ void move_robot(float Theta) {
   }
 }
 
-/*
 //回転する（回転の中心、角度）
 void move_rotate(vector center, float rotate) {
   float V[4]; //モーターごとの動かす量
   
 }
-*/
-
-/*
-//モーター出力　　定められた距離進むまで待つ
-void mov(float V[], float Delay){
-  //プラスとマイナスを分ける
-  uint8_t pin[8];  
-  for(int i = 0; i < 4; i++){
-    int j = i*2;
-    if (V[i] > 0){
-      pin[j] = 0;
-      pin[j+1] = 1;
-    }else{
-      pin[j] = 1;
-      pin[j+1] = 0;
-      V[i] = -V[i];
-    }
-    Serial.print(pin[j] + j);
-    Serial.print(":");
-    Serial.println(V[i] * motor_PWM * motor_character[i]);
-    }
-
-  //出力
-  const unsigned long startTime_us = millis();
-  do{
-    for(int i=0; i<4; i++){
-      int j = i*2;
-      analogWrite(motorPin[pin[j]   + j],  V[i] * motor_PWM * motor_character[i]);   //動かす
-      analogWrite(motorPin[pin[j+1] + j],  0);
-    }
-  } while((millis() - startTime_us) < Delay * motor_delay_ratio);
-  
-  Serial.print("delay_value ");
-  Serial.println(Delay);
-}
-*/
-
 
 //止まる
 void mov_stop(){
