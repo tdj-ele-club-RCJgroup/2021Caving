@@ -17,7 +17,6 @@ float motor_delay_ratio = 12;   //1cm進むのに待つ時間[ms]
 void  XYtoRT(vector *Data);                               //ベクトルの変換
 void  RTtoXY(vector *Data);                               //    〃
 void  move_robot(float Theta);                            //モータの出力計算(目標の方向)
-void  move_rotate(vector center, float rotate);           //回転する（回転の中心、角度）
 void  mov_stop();                                         //止まる
 void  mov(float V[], float Delay);                        //モーター関数用
 
@@ -113,12 +112,6 @@ void move_robot(float Theta) {
       Serial.println((String)motorPin[2*i+1] + ":" + -V[i]);
     }
   }
-}
-
-//回転する（回転の中心、角度）
-void move_rotate(vector center, float rotate) {
-  float V[4]; //モーターごとの動かす量
-  
 }
 
 //止まる
