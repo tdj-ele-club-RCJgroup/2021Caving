@@ -1,3 +1,8 @@
+#include <Wire.h>
+#include <Adafruit_Sensor.h>
+#include <Adafruit_BNO055.h>
+#include <utility/imumaths.h> //ジャイロセンサ用
+
 typedef struct {
   float X; //直交座標のⅹ座標 [cm]
   float Y; //直交座標のＹ座標 [cm]
@@ -14,12 +19,17 @@ const float   motor_character[4]  = {1.000, 1.000, 1.000, 1.000}; //モーター
 int   motor_PWM         = 255;  //0~255のpwmの基準の値
 float motor_delay_ratio = 12;   //1cm進むのに待つ時間[ms]
 
+//ジャイロ
+bool  nogyro = false;
+float rotate = 0;
+
 void  XYtoRT(vector *Data);                               //ベクトルの変換
 void  RTtoXY(vector *Data);                               //    〃
 void  move_robot(float Theta);                            //モータの出力計算(目標の方向)
 void  move_rotate(vector center, float rotate);           //回転する（回転の中心、角度）
 void  mov_stop();                                         //止まる
 void  mov(float V[], float Delay);                        //モーター関数用
+float gyro();                                             //ジャイロセンサ更新(rotateに代入)
 
 void setup() {
   Serial.begin(9600);
@@ -28,9 +38,15 @@ void setup() {
   for (int i=0; i<6; i++){
     pinMode(motorPin[i], OUTPUT);
   }
+  //ジャイロセンサ開始
+  if(!bno.begin()){
+    Serial.print("No gyro");
+    nogyro = true;
+  };
 }
   
 void loop() {
+  gyro();//ジャイロ更新
   vector aim;      //進みたい目的地
   aim.R = 1;
   aim.T = 0.5;       //前方向
@@ -53,6 +69,7 @@ void move_robot(float Theta) {
   float V[4]; //モーターごとの動かす量
 
   //回転を機体からみたものに戻す
+  Theta = Theta - rotate;
   //原点を機体の中心からモーターの中心に変換
 
   //軸を45度回転し、モーターの動かす量を求める
@@ -125,5 +142,13 @@ void move_rotate(vector center, float rotate) {
 void mov_stop(){
   for(int i=0; i<6; i++){
     analogWrite(motorPin[i], 255);
+  }
+}
+
+//ジャイロセンサ更新(rotateに代入)
+void gyro(){
+  if(!nogyro){
+  imu::Vector<3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
+  rotate = euler.x / 180; //[ラジアン÷π] に変換
   }
 }
