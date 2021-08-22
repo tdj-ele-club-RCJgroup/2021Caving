@@ -7,7 +7,7 @@ typedef struct {
   float X; //直交座標のⅹ座標 [cm]
   float Y; //直交座標のＹ座標 [cm]
   float R; //　極座標のｒ（中心からの距離）[cm]
-  float T; //　極座標のθ（中心から線を引いたときのｘ軸との角度）...ラジアン/π
+  float T; //　極座標のθ（中心から線を引いたときのｘ軸との角度）...度
 } vector;
 
 //モーター
@@ -21,15 +21,15 @@ float motor_delay_ratio = 12;   //1cm進むのに待つ時間[ms]
 
 //ジャイロ
 bool  nogyro = false;
-float rotate = 0.5;  //0.5が前向き
+float rotate = 90;  //90が前向き
 
-void  XYtoRT(vector *Data);                               //ベクトルの変換
-void  RTtoXY(vector *Data);                               //    〃
-void  move_robot(float Theta);                            //モータの出力計算(目標の方向)
-void  move_rotate(vector center, float rotate);           //回転する（回転の中心、角度）
-void  mov_stop();                                         //止まる
-void  mov(float V[], float Delay);                        //モーター関数用
-float gyro();                                             //ジャイロセンサ更新(rotateに代入)
+void XYtoRT(vector *Data);                               //ベクトルの変換
+void RTtoXY(vector *Data);                               //    〃
+void move_robot(float Theta);                            //モータの出力計算(目標の方向)
+void move_rotate(vector center, float rotate);           //回転する（回転の中心、角度）
+void mov_stop();                                         //止まる
+void mov(float V[], float Delay);                        //モーター関数用
+void gyro();                                             //ジャイロセンサ更新(rotateに代入)
 
 void setup() {
   Serial.begin(9600);
@@ -49,19 +49,19 @@ void loop() {
   gyro();//ジャイロ更新
   vector aim;      //進みたい目的地
   aim.R = 1;
-  aim.T = 0.5;       //前方向
+  aim.T = 90;       //前方向
   move_robot(aim.T);
 }
 
 //ベクトルの変換
 void XYtoRT(vector *Data){
   Data->R = sqrt(pow(Data->X, 2.0) + pow(Data->Y, 2.0));
-  Data->T = atan2(Data->Y, Data->X) / M_PI;
+  Data->T = atan2(Data->Y, Data->X) * 180 / M_PI;
 }
 void RTtoXY(vector *Data){
-  Data->X = Data->R * cos(Data->T * M_PI);
-  Data->Y = Data->R * sin(Data->T * M_PI);
-  Data->T = Data->T % 2.00;
+  Data->Y = Data->R * sin(Data->T / 180 * M_PI);
+  Data->X = Data->R * cos(Data->T / 180 * M_PI);
+  Data->T = Data->T % 360;
 }
 
 //モータの出力計算(目標の方向)
@@ -76,7 +76,7 @@ void move_robot(float Theta) {
   //軸を45度回転し、モーターの動かす量を求める
   motor_mov.R = 1;
   Serial.println((String)"motor_mov.R = " + motor_mov.R);
-  motor_mov.T = Theta + 0.25;
+  motor_mov.T = Theta + 45;
   Serial.println((String)"motor_mov.T = " + motor_mov.T);
   RTtoXY(&motor_mov);
 
@@ -169,12 +169,12 @@ void mov_stop(){
 //ジャイロセンサ更新(rotateに代入)
 void gyro(){
   if(!nogyro){
-  imu::Vector<3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
-  rotate = euler.x / 180; //[ラジアン÷π] に変換
-  }
-  if(rotate > 1.5){
-    rotate = rotate - 1.5;
-  }else{
-    rotate = rotate + 0.5;
+    imu::Vector<3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
+    rotate = euler.x;
+    if(rotate > 275){
+      rotate = euler.x - 275;
+    }else{
+      rotate = euler.x + 90;
+    }
   }
 }
