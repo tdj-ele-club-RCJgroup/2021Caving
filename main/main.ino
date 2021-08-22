@@ -7,7 +7,7 @@ typedef struct {
   float X; //直交座標のⅹ座標 [cm]
   float Y; //直交座標のＹ座標 [cm]
   float R; //　極座標のｒ（中心からの距離）[cm]
-  float T; //　極座標のθ（中心から線を引いたときのｘ軸との角度）...度
+  float T; //　極座標のθ（正面0,-180~180）...度
 } vector;
 
 //モーター
@@ -20,8 +20,10 @@ int   motor_PWM         = 255;  //0~255のpwmの基準の値
 float motor_delay_ratio = 12;   //1cm進むのに待つ時間[ms]
 
 //ジャイロ
+Adafruit_BNO055 bno = Adafruit_BNO055(-1, 0x29);
 bool  nogyro = false;
-float rotate = 90;  //90が前向き
+float rotate = 0;  //0が前向き
+const float rot_ign = 5;  //多少の傾きは無視
 
 void XYtoRT(vector *Data);                               //ベクトルの変換
 void RTtoXY(vector *Data);                               //    〃
@@ -49,19 +51,25 @@ void loop() {
   gyro();//ジャイロ更新
   vector aim;      //進みたい目的地
   aim.R = 1;
-  aim.T = 90;       //前方向
+  aim.T = 0;       //前方向
   move_robot(aim.T);
 }
 
 //ベクトルの変換
 void XYtoRT(vector *Data){
   Data->R = sqrt(pow(Data->X, 2.0) + pow(Data->Y, 2.0));
-  Data->T = atan2(Data->Y, Data->X) * 180 / M_PI;
+  Data->T = atan2(Data->Y, Data->X) * 180 / M_PI  -  90;
+  if(-180 <= Data->T <= -275){
+    Data->T = Data->T + 360;
+  }
 }
 void RTtoXY(vector *Data){
-  Data->Y = Data->R * sin(Data->T / 180 * M_PI);
-  Data->X = Data->R * cos(Data->T / 180 * M_PI);
-  Data->T = Data->T % 360;
+  Data->Y = Data->R * sin((Data->T + 90) / 180 * M_PI);
+  Data->X = Data->R * cos((Data->T + 90) / 180 * M_PI);
+  Data->T = fmodf(Data->T + 720 , 360);
+  if(Data->T > 180){
+    Data->T = Data->T - 360;
+  }
 }
 
 //モータの出力計算(目標の方向)
@@ -136,27 +144,28 @@ void move_robot(float Theta) {
 //回転する（角度）
 void move_rotate(float Theta) {
   float V[4]; //モーターごとの動かす量
-  if()
-  if (rotate < Theta){
-    while(rotate < Theta){
-      for(int i = 0; i < 4; i++){
-        analogWrite(motorPin[2*i], V[i]);
-        analogWrite(motorPin[2*i+1],0);
-        Serial.println((String)(2*i) + ":" + V[i]);
+  if(fabsf(Theta - rotate) > rot_ign && fabsf(Theta) < 100){
+    if (rotate < Theta){  //正転
+      while(rotate < Theta){
+        for(int i = 0; i < 4; i++){
+          analogWrite(motorPin[2*i], V[i]);
+          analogWrite(motorPin[2*i+1],0);
+          Serial.println((String)(2*i) + ":" + V[i]);
+        }
+        gyro();
+      }
+    }else{  //逆転
+      while(rotate > Theta){
+        for(int i = 0; i < 4; i++){
+          analogWrite(motorPin[2*i],  0);
+          analogWrite(motorPin[2*i+1], V[i]);
+          Serial.println((String)(2*i+1) + ":" + V[i]);
+        }
         gyro();
       }
     }
-  }else{
-    while(rotate > Theta){
-      for(int i = 0; i < 4; i++){
-        analogWrite(motorPin[2*i],  0);
-        analogWrite(motorPin[2*i+1],-V[i]);
-        Serial.println((String)(2*i+1) + ":" + -V[i]);
-        gyro();
-      }
-    }
+    mov_stop();
   }
-  mov_stop();
 }
 
 //止まる
@@ -170,11 +179,9 @@ void mov_stop(){
 void gyro(){
   if(!nogyro){
     imu::Vector<3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
-    rotate = euler.x;
-    if(rotate > 275){
-      rotate = euler.x - 275;
-    }else{
-      rotate = euler.x + 90;
+    rotate = euler.x();
+    if(rotate > 180){
+      rotate = rotate - 360;
     }
   }
 }
