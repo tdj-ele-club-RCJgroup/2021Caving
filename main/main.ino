@@ -21,7 +21,7 @@ float motor_delay_ratio = 12;   //1cm進むのに待つ時間[ms]
 
 //ジャイロ
 bool  nogyro = false;
-float rotate = 0;
+float rotate = 0.5;  //0.5が前向き
 
 void  XYtoRT(vector *Data);                               //ベクトルの変換
 void  RTtoXY(vector *Data);                               //    〃
@@ -61,6 +61,7 @@ void XYtoRT(vector *Data){
 void RTtoXY(vector *Data){
   Data->X = Data->R * cos(Data->T * M_PI);
   Data->Y = Data->R * sin(Data->T * M_PI);
+  Data->T = Data->T % 2.00;
 }
 
 //モータの出力計算(目標の方向)
@@ -123,19 +124,39 @@ void move_robot(float Theta) {
     if (V[i] > 0){
       analogWrite(motorPin[2*i], V[i]);
       analogWrite(motorPin[2*i+1],0);
-      Serial.println((String)motorPin[2*i] + ":" + V[i]);
+      Serial.println((String)(2*i) + ":" + V[i]);
     }else{
       analogWrite(motorPin[2*i],  0);
       analogWrite(motorPin[2*i+1],-V[i]);
-      Serial.println((String)motorPin[2*i+1] + ":" + -V[i]);
+      Serial.println((String)(2*i+1) + ":" + -V[i]);
     }
   }
 }
 
-//回転する（回転の中心、角度）
-void move_rotate(vector center, float rotate) {
+//回転する（角度）
+void move_rotate(float Theta) {
   float V[4]; //モーターごとの動かす量
-  
+  if()
+  if (rotate < Theta){
+    while(rotate < Theta){
+      for(int i = 0; i < 4; i++){
+        analogWrite(motorPin[2*i], V[i]);
+        analogWrite(motorPin[2*i+1],0);
+        Serial.println((String)(2*i) + ":" + V[i]);
+        gyro();
+      }
+    }
+  }else{
+    while(rotate > Theta){
+      for(int i = 0; i < 4; i++){
+        analogWrite(motorPin[2*i],  0);
+        analogWrite(motorPin[2*i+1],-V[i]);
+        Serial.println((String)(2*i+1) + ":" + -V[i]);
+        gyro();
+      }
+    }
+  }
+  mov_stop();
 }
 
 //止まる
@@ -150,5 +171,10 @@ void gyro(){
   if(!nogyro){
   imu::Vector<3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
   rotate = euler.x / 180; //[ラジアン÷π] に変換
+  }
+  if(rotate > 1.5){
+    rotate = rotate - 1.5;
+  }else{
+    rotate = rotate + 0.5;
   }
 }
