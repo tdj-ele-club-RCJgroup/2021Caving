@@ -28,9 +28,8 @@ const float rot_ign = 5;  //多少の傾きは無視
 void XYtoRT(vector *Data);                               //ベクトルの変換
 void RTtoXY(vector *Data);                               //    〃
 void move_robot(float Theta);                            //モータの出力計算(目標の方向)
-void move_rotate(vector center, float rotate);           //回転する（回転の中心、角度）
-void mov_stop();                                         //止まる
-void mov(float V[], float Delay);                        //モーター関数用
+void move_rotate(float Theta);                           //回転する（回転の中心、角度）
+void move_stop();                                        //止まる
 void gyro();                                             //ジャイロセンサ更新(rotateに代入)
 
 void setup() {
@@ -169,7 +168,7 @@ void move_rotate(float Theta) {
 }
 
 //止まる
-void mov_stop(){
+void move_stop(){
   for(int i=0; i<6; i++){
     analogWrite(motorPin[i], 255);
   }
