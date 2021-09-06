@@ -24,6 +24,8 @@ void move_rotate(float Theta);  //回転する（回転の中心、角度）
 void move_stop();               //止まる
 
 //赤外線センサ
+const int IRhigh[8] = {800,800,800,800,800,800,800,800};
+const int IRlow[8]  = {0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  };
 vector ball;
 void sen_IRball();  //赤外線センサ(ボール位置をballに代入)
 
