@@ -3,34 +3,37 @@
 #include <Adafruit_BNO055.h>
 #include <utility/imumaths.h> //ジャイロセンサ用
 
+//座標
 typedef struct {
   float X; //直交座標のⅹ座標 [cm]
   float Y; //直交座標のＹ座標 [cm]
   float R; //　極座標のｒ（中心からの距離）[cm]
   float T; //　極座標のθ（正面0,-180~180）...度
 } vector;
+void XYtoRT(vector *Data);      //座標の変換
+void RTtoXY(vector *Data);      //    〃
 
 //モーター
 const uint8_t motorPin[8]         = {7,8,10,11,12,13,5,6};         //モーターの制御ピン
 const float   motor_[4]           = {0, 0, 0, 0}; //モーターの中心からの距離[cm]
 const float   motor_character[4]  = {1.000, 1.000, 1.000, 1.000}; //モーターの誤差補正
-
-//モーター
-int   motor_PWM         = 255;  //0~255のpwmの基準の値
+int   motor_PWM         = 255;  //0~255 出力するpwmの最大値
 float motor_delay_ratio = 12;   //1cm進むのに待つ時間[ms]
+void move_robot(float Theta);   //モータの出力計算(目標の方向)
+void move_rotate(float Theta);  //回転する（回転の中心、角度）
+void move_stop();               //止まる
+
+//赤外線センサ
+vector ball;
+void sen_IRball();  //赤外線センサ(ボール位置をballに代入)
 
 //ジャイロ
 Adafruit_BNO055 bno = Adafruit_BNO055(-1, 0x29);
 bool  nogyro = false;
 float rotate = 0;  //0が前向き
 const float rot_ign = 5;  //多少の傾きは無視
+void gyro();  //ジャイロセンサ更新(rotateに代入)
 
-void XYtoRT(vector *Data);                               //ベクトルの変換
-void RTtoXY(vector *Data);                               //    〃
-void move_robot(float Theta);                            //モータの出力計算(目標の方向)
-void move_rotate(float Theta);                           //回転する（回転の中心、角度）
-void move_stop();                                        //止まる
-void gyro();                                             //ジャイロセンサ更新(rotateに代入)
 
 void setup() {
   Serial.begin(9600);
@@ -163,7 +166,7 @@ void move_rotate(float Theta) {
         gyro();
       }
     }
-    mov_stop();
+    move_stop();
   }
 }
 
@@ -172,6 +175,11 @@ void move_stop(){
   for(int i=0; i<6; i++){
     analogWrite(motorPin[i], 255);
   }
+}
+
+//赤外線センサ(ボール位置をballに代入)
+void sen_IRball(){
+
 }
 
 //ジャイロセンサ更新(rotateに代入)
