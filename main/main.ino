@@ -9,9 +9,9 @@ typedef struct {
   float Y; //直交座標のＹ座標 [cm]
   float R; //　極座標のｒ（中心からの距離）[cm]
   float T; //　極座標のθ（正面0,-180~180）...度
-} vector;
-void XYtoRT(vector *Data);      //座標の変換
-void RTtoXY(vector *Data);      //    〃
+} Coordinate;
+void XYtoRT(Coordinate *Data);      //座標の変換
+void RTtoXY(Coordinate *Data);      //    〃
 
 //モーター
 const uint8_t motorPin[8]         = {7,8,10,11,12,13,5,6};         //モーターの制御ピン
@@ -26,7 +26,7 @@ void move_stop();               //止まる
 //赤外線センサ
 const int IRhigh[8] = {800,800,800,800,800,800,800,800};
 const int IRlow[8]  = {0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  };
-vector ball;
+Coordinate ball;
 void sen_IRball();  //赤外線センサ(ボール位置をballに代入)
 
 //ジャイロ
@@ -53,21 +53,21 @@ void setup() {
   
 void loop() {
   gyro();//ジャイロ更新
-  vector aim;      //進みたい目的地
+  Coordinate aim;      //進みたい目的地
   aim.R = 1;
   aim.T = 0;       //前方向
   move_robot(aim.T);
 }
 
 //ベクトルの変換
-void XYtoRT(vector *Data){
+void XYtoRT(Coordinate *Data){
   Data->R = sqrt(pow(Data->X, 2.0) + pow(Data->Y, 2.0));
   Data->T = atan2(Data->Y, Data->X) * 180 / M_PI  -  90;
   if(-180 <= Data->T <= -275){
     Data->T = Data->T + 360;
   }
 }
-void RTtoXY(vector *Data){
+void RTtoXY(Coordinate *Data){
   Data->Y = Data->R * sin((Data->T + 90) / 180 * M_PI);
   Data->X = Data->R * cos((Data->T + 90) / 180 * M_PI);
   Data->T = fmodf(Data->T + 720 , 360);
@@ -78,7 +78,7 @@ void RTtoXY(vector *Data){
 
 //モータの出力計算(目標の方向)
 void move_robot(float Theta) {
-  vector motor_mov; //座標軸を45度回転した後の座標を後で格納
+  Coordinate motor_mov; //座標軸を45度回転した後の座標を後で格納
   float V[4]; //モーターごとの動かす量
 
   //回転を機体からみたものに戻す

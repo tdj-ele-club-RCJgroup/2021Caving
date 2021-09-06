@@ -3,7 +3,7 @@ typedef struct {
   float Y; //直交座標のＹ座標 [cm]
   float R; //　極座標のｒ（中心からの距離）[cm]
   float T; //　極座標のθ（中心から線を引いたときのｘ軸との角度）...ラジアン/π
-} vector;
+} Coordinate;
 
 //モーター
 const uint8_t motorPin[8]         = {7,8,10,11,12,13,5,6};         //モーターの制御ピン
@@ -14,8 +14,8 @@ const float   motor_character[4]  = {1.000, 1.000, 1.000, 1.000}; //モーター
 int   motor_PWM         = 255;  //0~255のpwmの基準の値
 float motor_delay_ratio = 12;   //1cm進むのに待つ時間[ms]
 
-void  XYtoRT(vector *Data);                               //ベクトルの変換
-void  RTtoXY(vector *Data);                               //    〃
+void  XYtoRT(Coordinate *Data);                               //ベクトルの変換
+void  RTtoXY(Coordinate *Data);                               //    〃
 void  move_robot(float Theta);                            //モータの出力計算(目標の方向)
 void  mov_stop();                                         //止まる
 void  mov(float V[], float Delay);                        //モーター関数用
@@ -30,25 +30,25 @@ void setup() {
 }
   
 void loop() {
-  vector aim;      //進みたい目的地
+  Coordinate aim;      //進みたい目的地
   aim.R = 1;
   aim.T = 0.5;       //前方向
   move_robot(aim.T);
 }
 
 //ベクトルの変換
-void XYtoRT(vector *Data){
+void XYtoRT(Coordinate *Data){
   Data->R = sqrt(pow(Data->X, 2.0) + pow(Data->Y, 2.0));
   Data->T = atan2(Data->Y, Data->X) / M_PI;
 }
-void RTtoXY(vector *Data){
+void RTtoXY(Coordinate *Data){
   Data->X = Data->R * cos(Data->T * M_PI);
   Data->Y = Data->R * sin(Data->T * M_PI);
 }
 
 //モータの出力計算(目標の方向)
 void move_robot(float Theta) {
-  vector motor_mov; //座標軸を45度回転した後の座標を後で格納
+  Coordinate motor_mov; //座標軸を45度回転した後の座標を後で格納
   float V[4]; //モーターごとの動かす量
 
   //回転を機体からみたものに戻す
