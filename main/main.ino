@@ -2,6 +2,7 @@
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BNO055.h>
 #include <utility/imumaths.h> //ジャイロセンサ用
+#include <ArduinoSort.h> //赤外線ソート用
 
 //座標
 typedef struct {
@@ -24,8 +25,19 @@ void move_rotate(float Theta);  //回転する（回転の中心、角度）
 void move_stop();               //止まる
 
 //赤外線センサ
+#define range 3
+const uint8_t IRpin[8] = {1,2,3,4,5,6,7,8};
 const int IRhigh[8] = {800,800,800,800,800,800,800,800};
 const int IRlow[8]  = {0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  };
+float IRlocate_t[8] = {0  ,45 ,90 ,135,180,-135,-90 ,-45 };
+Coordinate IRlocate[8];
+void IRlocateCul(){
+  for(int i=0; i<8; i++){
+    IRlocate[i].R = 1;
+    IRlocate[i].T = IRlocate_t[i];
+    RTtoXY(&IRlocate[i]);
+  }
+}; //IRlocateの初期化 setup関数で実行
 Coordinate ball;
 void sen_IRball();  //赤外線センサ(ボール位置をballに代入)
 
@@ -44,6 +56,8 @@ void setup() {
   for (int i=0; i<6; i++){
     pinMode(motorPin[i], OUTPUT);
   }
+  //赤外線センサ場所の計算
+  IRlocateCul();
   //ジャイロセンサ開始
   if(!bno.begin()){
     Serial.print("No gyro");
@@ -181,7 +195,37 @@ void move_stop(){
 
 //赤外線センサ(ボール位置をballに代入)
 void sen_IRball(){
+  int rawdata[8] = {0};
+  uint8_t IRdata[8] = {0};
+  ball = {0,0,0,0};
 
+  //読み取り(rawdata[]に代入)
+  for(int i=0; i<8; i++){
+    rawdata[i] = analogRead(IRpin[i]);
+  }
+  //値の範囲でで分ける(IRdata[]に代入)
+  for(int i=0; i<8; i++){
+    if(rawdata[i] <= IRlow[i]){
+      IRdata[i] = 0;
+    }else if(rawdata[i] > IRhigh[i]){
+      IRdata[i] = range;
+    }else{
+      for(int j=0; j < range; j++){
+        if(((range-j)*IRlow[i] + j*IRhigh[i]) / range  <   rawdata[i]  <=  ((range-j-1)*IRlow[i] + (j+1)*IRhigh[i]) / range){
+          IRdata[i] = j;
+        }
+      }
+    }
+  }
+  //ベクトルで角度を算出(ball.Tに代入)
+  for(int i=0; i<8; i++){
+    ball.X += IRdata[i] * IRlocate[i].X;
+    ball.Y += IRdata[i] * IRlocate[i].Y;
+  }
+  XYtoRT(&ball);
+  //だいたいの距離を割り出す(ball.Rに代入)
+  sortArray(IRdata, 8);//IRdataを昇順で並び替え
+  
 }
 
 //ジャイロセンサ更新(rotateに代入)
