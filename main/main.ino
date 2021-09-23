@@ -44,14 +44,21 @@ void setup() {
     Serial.print("No gyro");
     nogyro = true;
   };
+  //ジョイスティックピン宣言
+  pinMode(46, INPUT_PULLUP);
 }
   
 void loop() {
   gyro();//ジャイロ更新
-  vector aim;      //進みたい目的地
-  aim.R = 1;
-  aim.T = 0;       //前方向
-  move_robot(aim.T);
+  vector joystick;      //進みたい目的地
+  joystick.X = analogRead(6) - 512;
+  joystick.Y = analogRead(7) - 512;
+  XYtoRT(&joystick);
+  if(!digitalRead(46) || fabsf(joystick.T) < 20){
+    move_stop();
+  }else{
+    move_robot(joystick.T);
+  }
 }
 
 //ベクトルの変換
@@ -163,7 +170,7 @@ void move_rotate(float Theta) {
         gyro();
       }
     }
-    mov_stop();
+    move_stop();
   }
 }
 
