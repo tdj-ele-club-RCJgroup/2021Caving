@@ -15,7 +15,7 @@ void XYtoRT(Coordinate *Data);      //座標の変換
 void RTtoXY(Coordinate *Data);      //    〃
 
 //モーター
-const uint8_t motorPin[8]         = {7,8,10,11,12,13,5,6};         //モーターの制御ピン
+const uint8_t motorPin[8]         = {6,7,8,9,10,11,4,5};         //モーターの制御ピン
 const float   motor_[4]           = {0, 0, 0, 0}; //モーターの中心からの距離[cm]
 const float   motor_character[4]  = {1.000, 1.000, 1.000, 1.000}; //モーターの誤差補正
 int   motor_PWM         = 255;  //0~255 出力するpwmの最大値
@@ -26,7 +26,7 @@ void move_stop();               //止まる
 
 //赤外線センサ
 #define range 3
-const uint8_t IRpin[8] = {1,2,3,4,5,6,7,8};
+const uint8_t IRpin[8] = {14,13,12,11,10,9,8,15};
 const int IRhigh[8] = {800,800,800,800,800,800,800,800};
 const int IRlow[8]  = {0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  };
 float IRlocate_t[8] = {0  ,45 ,90 ,135,180,-135,-90 ,-45 };
@@ -67,9 +67,10 @@ void setup() {
   
 void loop() {
   gyro();//ジャイロ更新
+  sen_IRball();//赤外線更新
   Coordinate aim;      //進みたい目的地
   aim.R = 1;
-  aim.T = 0;       //前方向
+  aim.T = ball.T;       //ボール方向
   move_robot(aim.T);
 }
 
