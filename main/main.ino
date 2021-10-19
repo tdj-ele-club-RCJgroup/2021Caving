@@ -65,7 +65,7 @@ void loop() {
 void XYtoRT(vector *Data){
   Data->R = sqrt(pow(Data->X, 2.0) + pow(Data->Y, 2.0));
   Data->T = atan2(Data->Y, Data->X) * 180 / M_PI  -  90;
-  if(-180 <= Data->T <= -275){
+  if(-275 <= Data->T && Data->T <= -180){
     Data->T = Data->T + 360;
   }
 }
