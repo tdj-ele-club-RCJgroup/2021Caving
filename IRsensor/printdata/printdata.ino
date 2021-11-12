@@ -11,10 +11,10 @@ void RTtoXY(Coordinate *Data);      //    〃
 
 
 //赤外線センサ
-#define range 90
-const uint8_t IRpin[8] = {14,13,12,11,10,9,8,15};
+#define range 20
+const uint8_t IRpin[8] = {9,10,11,12,13,14,15,8};
 const int IRhigh[8] = {800,800,800,800,800,800,800,800};
-const int IRlow[8]  = {0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  };
+const int IRlow[8]  = {0, 0,  0,  0,  1,  7,  4,  6};
 float IRlocate_t[8] = {0  ,45 ,90 ,135,180,-135,-90 ,-45 };
 Coordinate IRlocate[8];
 void IRlocateCul(){
@@ -80,14 +80,20 @@ void sen_IRball(){
     }else{
       for(int j=0; j < range; j++){
         if(((range-j)*IRlow[i] + j*IRhigh[i]) / range  < rawdata[i]  &&  rawdata[i] <=  ((range-j-1)*IRlow[i] + (j+1)*IRhigh[i]) / range){
-          IRdata[i] = j;
+          IRdata[i] = j+1;
+          break;
         }
       }
     }
   }
+
+  Serial.print((String)"rawdata   ");
   for(int i=0; i<8; i++){
-    Serial.print((String)"rawdata " + i +"  " + rawdata[i] + "  ");
-    Serial.println((String)"IRdata" + i +"  " + IRdata[i]);
+    Serial.print((String)rawdata[i] + "," + "\t");
+  }
+  Serial.print("IRdata  ");
+  for(int i=0; i<8; i++){
+    Serial.print((String)"  " + IRdata[i]);
   }
   //ベクトルで角度を算出(ball.Tに代入)
   for(int i=0; i<8; i++){
@@ -96,6 +102,7 @@ void sen_IRball(){
   }
   //Serial.println((String)"ball.X " + ball.X + "  ball.Y " + ball.Y);
   XYtoRT(&ball);
-  Serial.println((String)"ball.T " + ball.T);
+  Serial.print((String)"    ball.T " + ball.T);
+  Serial.println((String)"    ball.R " + ball.R);
   //だいたいの距離を割り出す(ball.Rに代入)
 }
