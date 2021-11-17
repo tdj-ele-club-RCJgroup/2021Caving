@@ -25,10 +25,10 @@ void move_rotate(float Theta);  //回転する（回転の中心、角度）
 void move_stop();               //止まる
 
 //赤外線センサ
-#define range 3
-const uint8_t IRpin[8] = {14,13,12,11,10,9,8,15};
+#define range 20
+const uint8_t IRpin[8] = {9,10,11,12,13,14,15,8};
 const int IRhigh[8] = {800,800,800,800,800,800,800,800};
-const int IRlow[8]  = {0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  };
+const int IRlow[8]  = {0, 0,  0,  0,  1,  7,  4,  6};
 float IRlocate_t[8] = {0  ,45 ,90 ,135,180,-135,-90 ,-45 };
 Coordinate IRlocate[8];
 void IRlocateCul(){
@@ -211,19 +211,29 @@ void sen_IRball(){
     }else if(rawdata[i] > IRhigh[i]){
       IRdata[i] = range;
     }else{
-      for(int j=0; j < range; j++){
-        if(((range-j)*IRlow[i] + j*IRhigh[i]) / range  <   rawdata[i]  <=  ((range-j-1)*IRlow[i] + (j+1)*IRhigh[i]) / range){
-          IRdata[i] = j;
-        }
-      }
+      IRdata[i] = (rawdata[i] - IRlow[i]) * (range) / (IRhigh[i] - IRlow[i])  + 1; //小数は切り捨てされる
     }
   }
+
+  /*Serial.print((String)"rawdata   ");
+  for(int i=0; i<8; i++){
+    Serial.print((String)rawdata[i] + "," + "\t");
+  }
+  Serial.print("IRdata  ");
+  for(int i=0; i<8; i++){
+    Serial.print((String)"  " + IRdata[i]);
+  }//*/
+
   //ベクトルで角度を算出(ball.Tに代入)
   for(int i=0; i<8; i++){
     ball.X += IRdata[i] * IRlocate[i].X;
     ball.Y += IRdata[i] * IRlocate[i].Y;
   }
+  //Serial.println((String)"ball.X " + ball.X + "  ball.Y " + ball.Y);
   XYtoRT(&ball);
+  //Serial.print((String)"    ball.T " + ball.T);
+  //Serial.println((String)"    ball.R " + ball.R);
+  
   //だいたいの距離を割り出す(ball.Rに代入)
   sortArray(IRdata, 8);//IRdataを昇順で並び替え
   

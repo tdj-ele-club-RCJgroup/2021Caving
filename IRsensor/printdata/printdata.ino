@@ -78,12 +78,7 @@ void sen_IRball(){
     }else if(rawdata[i] > IRhigh[i]){
       IRdata[i] = range;
     }else{
-      for(int j=0; j < range; j++){
-        if(((range-j)*IRlow[i] + j*IRhigh[i]) / range  < rawdata[i]  &&  rawdata[i] <=  ((range-j-1)*IRlow[i] + (j+1)*IRhigh[i]) / range){
-          IRdata[i] = j+1;
-          break;
-        }
-      }
+      IRdata[i] = (rawdata[i] - IRlow[i]) * (range) / (IRhigh[i] - IRlow[i])  + 1; //小数は切り捨てされる
     }
   }
 
