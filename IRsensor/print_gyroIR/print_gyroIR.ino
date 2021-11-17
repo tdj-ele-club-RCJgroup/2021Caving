@@ -25,7 +25,7 @@ Coordinate IRlocate[8];
 void IRlocateCul(){
   for(int i=0; i<8; i++){
     IRlocate[i].R = 1;
-    IRlocate[i].T = IRlocate_t[i];
+    IRlocate[i].T = IRlocate_t[i] + rotate;
     RTtoXY(&IRlocate[i]);
   }
 }; //IRlocateの初期化 setup関数で実行
@@ -79,6 +79,7 @@ void sen_IRball(){
   int rawdata[8] = {0};
   uint8_t IRdata[8] = {0};
   ball = {0,0,0,0};
+  IRlocateCul(); //IRlocateの初期化　回転をもどす
 
   //読み取り(rawdata[]に代入)
   for(int i=0; i<8; i++){
