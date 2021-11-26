@@ -25,7 +25,7 @@ Coordinate IRlocate[8];
 void IRlocateCul(){
   for(int i=0; i<8; i++){
     IRlocate[i].R = 1;
-    IRlocate[i].T = IRlocate_t[i] + rotate;
+    IRlocate[i].T = IRlocate_t[i];
     RTtoXY(&IRlocate[i]);
   }
 }; //IRlocateの初期化 setup関数で実行
@@ -79,7 +79,6 @@ void sen_IRball(){
   int rawdata[8] = {0};
   uint8_t IRdata[8] = {0};
   ball = {0,0,0,0};
-  IRlocateCul(); //IRlocateの初期化　回転をもどす
 
   //読み取り(rawdata[]に代入)
   for(int i=0; i<8; i++){
@@ -115,8 +114,15 @@ void sen_IRball(){
   }
   //Serial.println((String)"ball.X " + ball.X + "  ball.Y " + ball.Y);
   XYtoRT(&ball);
+  Serial.print((String)"    ballraw.T " + ball.T);
+  /*Serial.println((String)"    ball.R " + ball.R);//*/
+  //回転を含める
+  ball.T = ball.T + rotate;
+  RTtoXY(&ball);
+  Serial.print((String)"    rotate " + rotate);
   Serial.print((String)"    ball.T " + ball.T);
   Serial.println((String)"    ball.R " + ball.R);
+  
   //だいたいの距離を割り出す(ball.Rに代入)
 }
 
@@ -125,8 +131,9 @@ void gyro(){
   if(!nogyro){
     imu::Vector<3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
     rotate = euler.x();
-    if(rotate > 180){
+    if(rotate >= 180){
       rotate = rotate - 360;
     }
+    rotate = -rotate;
   }
 }
