@@ -15,7 +15,7 @@ void XYtoRT(Coordinate *Data);      //座標の変換
 void RTtoXY(Coordinate *Data);      //    〃
 
 //モーター
-const uint8_t motorPin[8]         = {6,7,8,9,10,11,4,5};         //モーターの制御ピン
+const uint8_t motorPin[8]         = {6,7,8,9,11,10,4,5};         //モーターの制御ピン
 const float   motor_[4]           = {0, 0, 0, 0}; //モーターの中心からの距離[cm]
 const float   motor_character[4]  = {1.000, 1.000, 1.000, 1.000}; //モーターの誤差補正
 int   motor_PWM         = 255;  //0~255 出力するpwmの最大値
@@ -67,12 +67,18 @@ void setup() {
 }
   
 void loop() {
+  Serial.println();
+  Serial.println();
+
   gyro();//ジャイロ更新
   sen_IRball();//赤外線更新
+  Serial.println((String)"ボール方向" + ball.T);
   Coordinate aim;      //進みたい目的地
   aim.R = 1;
   aim.T = ball.T;       //ボール方向
   move_robot(aim.T);
+
+  delay(500);
 }
 
 //ベクトルの変換
@@ -116,21 +122,21 @@ void move_robot(float Theta) {
 
   //delay_value = motor_mov.R;  //進む距離
 
-   Serial.println();
+  /* Serial.println();
   for(int i=0; i<4; i++){
     Serial.print("abV");
     Serial.print(i);
     Serial.print(" ");
     Serial.println(V[i]);
-  }
+  }//*/
 
   //V[ ]の最大値を1にする
   if(fabsf(V[0]) >= fabsf(V[1])){
     float maximum = fabsf(V[0]);
     for(int i = 0;i < 4; i++){
       V[i] = V[i] / maximum * motor_PWM * motor_character[i];
-      Serial.print("|V[0]| >= |V[1]|    : ");
-      Serial.println((String)"V[" + i + "]= " + V[i]);
+      /*Serial.print("|V[0]| >= |V[1]|    : ");
+      Serial.println((String)"V[" + i + "]= " + V[i]);//*/
     }
   }else{
     float maximum = fabsf(V[1]);
@@ -145,18 +151,18 @@ void move_robot(float Theta) {
     Serial.print(i);
     Serial.print(" ");
     Serial.println(V[i]);
-  }
+  }//*/
   
   //出力
   for(int i = 0; i < 4; i++){
     if (V[i] > 0){
       analogWrite(motorPin[2*i], V[i]);
       analogWrite(motorPin[2*i+1],0);
-      Serial.println((String)(2*i) + ":" + V[i]);
+      //Serial.println((String)(2*i) + ":" + V[i]);
     }else{
       analogWrite(motorPin[2*i],  0);
       analogWrite(motorPin[2*i+1],-V[i]);
-      Serial.println((String)(2*i+1) + ":" + -V[i]);
+      //Serial.println((String)(2*i+1) + ":" + -V[i]);
     }
   }
 }

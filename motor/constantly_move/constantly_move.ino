@@ -1,5 +1,5 @@
 //モーター
-const uint8_t motorPin[8]         = {5,6,7,8,10,11,12,13};         //モーターの制御ピン
+const uint8_t motorPin[8]         = {6,7,8,9,11,10,4,5};         //モーターの制御ピン
 
 
 void setup() {
