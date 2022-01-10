@@ -1,5 +1,5 @@
 //モーター
-const uint8_t motorPin[8]         = {6,7,8,9,11,10,4,5};         //モーターの制御ピン
+const uint8_t motorPin[8]         = {6,7,8,9,10,11,4,5};         //モーターの制御ピン
 
 
 void setup() {
@@ -8,7 +8,7 @@ void setup() {
   Serial.begin(9600);
 
   //モーターのデジタルピン宣言
-  for (int i=0; i<6; i++){
+  for (int i=0; i<8; i++){
     pinMode(motorPin[i], OUTPUT);
   }
 }
