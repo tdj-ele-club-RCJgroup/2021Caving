@@ -1,6 +1,6 @@
 //ライン制御
 #define intPin 2
-const uint8_t linePin[16] = {4,5,6,7,8,9,10,11,12,13,14,15,16};
+const uint8_t linePin[16] = {4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19};
 byte upperData = 0;
 byte lowerData = 0;
 bool ifLine = false;
