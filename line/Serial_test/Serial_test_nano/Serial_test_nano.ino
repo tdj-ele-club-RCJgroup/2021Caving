@@ -6,9 +6,9 @@ void loop(){
 }
 
 void serialEvent(){
-  while (Serial.available() > 0)Serial.read();
+  while (Serial.available()) Serial.read(); //バッファを消す
   Serial.write(120);
-  while(Serial.available() < 0);
-  while (Serial.available() > 0)Serial.read();
+  while (!Serial.available()); //arduinoから送られてくるまで待つ
+  while (Serial.available()) Serial.read(); //バッファを消す
   Serial.write(95);
 }

@@ -25,6 +25,7 @@ void RTtoXY(Coordinate *Data){
 
 float lineLocate_t[16] = {0  ,45 ,90 ,135,180,-135,-90 ,-45 };
 Coordinate lineLocate[16];
+int rawData[8] = {0};
 void lineLocateCul(){
   for(int i=0; i<16; i++){
     lineLocate[i].R = 1;
@@ -38,27 +39,38 @@ void setup(){
   Serial.begin(9600);
   Serial1.begin(9600);
   lineLocateCul();
-  attachInterrupt(digitalPinToInterrupt(2),sen_line,RISING);
+  //attachInterrupt(digitalPinToInterrupt(2),);
 }
 
 void loop(){}
 
 void sen_line(){
-  byte lowerData = 0;
-  byte upperData = 0;
-  int rawData[8] = {0};
-  if(digitalRead(2)){
-    Serial1.write(1);
-    while(Serial.available() < 1);
-    lowerData = Serial.read();
-    Serial1.write(1);
-    while(Serial.available() < 1);
-    upperData = Serial.read();
-  }
+  int upperData = 0;
+  int lowerData = 0;
+
+  Serial1.write(1);
+  Serial1.flush();
+  do{
+    lowerData = Serial1.read();
+  }while(lowerData == -1);
+  Serial1.write(1);
+  Serial1.flush();
+  do{
+    upperData = Serial1.read();
+  }while(upperData == -1);
+
+  Serial.println(lowerData);
+  Serial.println(upperData);//*/
+
   for(int i=0; i<8; i++){
     rawData[i] = lowerData % 2;
     rawData[i+8] = upperData % 2;
     lowerData = ( lowerData - rawData[i] ) / 2;
     upperData = ( upperData - rawData[i+8] ) / 2;
+  }
+
+  for(int i=0; i<16; i++){
+    Serial.print(rawData[i]);
+    Serial.println();//*/
   }
 }

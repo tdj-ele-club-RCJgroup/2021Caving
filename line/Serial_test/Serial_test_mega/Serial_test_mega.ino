@@ -1,5 +1,3 @@
-byte upperData = 0;
-byte lowerData = 0;
 int rawData[8] = {0};
 void sen_line();
 
@@ -15,20 +13,32 @@ void loop(){
 }
 
 void sen_line(){
-    Serial1.write(1);
-    while(Serial1.available() < 1) Serial.println("waiting...");
-    lowerData = Serial1.read();
-    Serial1.write(1);
-    while(Serial1.available() < 1);
-    upperData = Serial1.read();
+  int upperData = 0;
+  int lowerData = 0;
 
-    Serial.println(upperData);
-    Serial.println(lowerData);
-    
+  Serial1.write(1);
+  Serial1.flush();
+  do{
+    lowerData = Serial1.read();
+  }while(lowerData == -1);
+  Serial1.write(1);
+  Serial1.flush();
+  do{
+    upperData = Serial1.read();
+  }while(upperData == -1);
+
+  Serial.println(lowerData);
+  Serial.println(upperData);//*/
+
   for(int i=0; i<8; i++){
     rawData[i] = lowerData % 2;
     rawData[i+8] = upperData % 2;
     lowerData = ( lowerData - rawData[i] ) / 2;
     upperData = ( upperData - rawData[i+8] ) / 2;
+  }
+
+  for(int i=0; i<16; i++){
+    Serial.print(rawData[i]);
+    Serial.println();//*/
   }
 }
