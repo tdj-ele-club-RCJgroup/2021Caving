@@ -23,6 +23,8 @@ void RTtoXY(Coordinate *Data){
   }
 };
 
+#define LED 12
+#define intPin_line 3
 float lineLocate_t[16] = {0  ,45 ,90 ,135,180,-135,-90 ,-45 };
 Coordinate lineLocate[16];
 int rawData[8] = {0};
@@ -33,28 +35,47 @@ void lineLocateCul(){
     RTtoXY(&lineLocate[i]);
   }
 }; //lineLocateの初期化 setup関数で実行
-void sen_line();
+void getData_line();
+void int_line();
+volatile bool ifLine; //ラインあるなしフラグ
+bool ifLine_process; //ライン処理実行中フラグ
 
 void setup(){
   Serial.begin(9600);
   Serial1.begin(9600);
+  pinMode(LED, OUTPUT);
+  digitalWrite(LED,HIGH);
   lineLocateCul();
-  //attachInterrupt(digitalPinToInterrupt(2),);
+  attachInterrupt(digitalPinToInterrupt(intPin_line),int_line,FALLING);
 }
 
-void loop(){}
+void loop(){
+  if(ifLine) getData_line(); ifLine = 0;
+  //Serial.println(digitalRead(intPin_line));
+}
 
-void sen_line(){
+void int_line(){
+  noInterrupts();
+  //モーターをブレーキ
+  
+  //ライン処理フラグ
+  ifLine = true;
+  interrupts();
+}
+
+void getData_line(){
   int upperData = 0;
   int lowerData = 0;
 
   Serial1.write(1);
   Serial1.flush();
+  while(!Serial1.available());
   do{
     lowerData = Serial1.read();
   }while(lowerData == -1);
   Serial1.write(1);
   Serial1.flush();
+  while(!Serial1.available());
   do{
     upperData = Serial1.read();
   }while(upperData == -1);
@@ -70,7 +91,7 @@ void sen_line(){
   }
 
   for(int i=0; i<16; i++){
-    Serial.print(rawData[i]);
+    /*Serial.print(rawData[i]);
     Serial.println();//*/
   }
 }

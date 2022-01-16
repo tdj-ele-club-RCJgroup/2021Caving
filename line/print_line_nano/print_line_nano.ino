@@ -36,17 +36,21 @@ void serialEvent(){
 
  //読み取り
 void getData(){
-  uint8_t rawdata[16];
+  uint8_t rawdata[16] = {0};
+  upperData = 0;
+  lowerData = 0;
   ifLine = false;
   for(int i=0; i<16; i++){
     rawdata[i] = !digitalRead(linePin[i]);
     if(rawdata[i]) ifLine = true;
-    //Serial.println((String)i + rawdata[i]);
+    //Serial.println((String)i + "\t" + rawdata[i]);
   }
   for(int i=0; i<8; i++){
-    lowerData += rawdata[i] * 2^i;
-    upperData += rawdata[i+8] * 2^(i+8);
+    lowerData += rawdata[i] * (1<<i);
+    upperData += rawdata[i+8] * (1<<i);
   }
+  /*Serial.println((String)"lowerData" + lowerData);
+  Serial.println((String)"upperData" + upperData);//*/
 }
 
 void sendData(){

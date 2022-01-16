@@ -3,8 +3,10 @@ void sen_line();
 
 void setup(){
   pinMode(2, OUTPUT);
+  pinMode(12, OUTPUT);
   Serial.begin(9600);
   Serial1.begin(9600);
+  digitalWrite(12,HIGH);
 }
 
 void loop(){
