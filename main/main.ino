@@ -39,15 +39,17 @@ void IRlocateCul(){
   }
 }; //IRlocateの初期化 setup関数で実行
 Coordinate ball;
-bool  noball = false;
+bool noball = false;
 void sen_IRball();  //赤外線センサ(ボール位置をballに代入)
 
 //ジャイロ
 Adafruit_BNO055 bno = Adafruit_BNO055(-1, 0x29);
 bool  nogyro = false;
+float firstRotation = 0; //はじめの値を記録
 float rotate = 0;  //0が前向き
 const float rot_ign = 5;  //多少の傾きは無視
 void gyro();  //ジャイロセンサ更新(rotateに代入)
+void lifted(); //持ち上げ確認
 
 
 void setup() {
@@ -64,6 +66,8 @@ void setup() {
     Serial.print("No gyro");
     nogyro = true;
   };
+  imu::Vector<3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
+  firstRotation = euler.x();
 }
   
 void loop() {
@@ -256,10 +260,21 @@ void sen_IRball(){
 void gyro(){
   if(!nogyro){
     imu::Vector<3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
-    rotate = euler.x();
+    rotate = euler.x() - firstRotation;
     if(rotate >= 180){
       rotate = rotate - 360;
     }
     rotate = -rotate;
+  }
+}
+
+//持ち上げ確認
+void lifted(){
+  if(!nogyro){
+    imu::Vector<3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
+    if(euler.y() < -15){
+      move_stop();
+      while(euler.y() < -15) euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
+    }
   }
 }
