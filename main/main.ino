@@ -42,6 +42,25 @@ Coordinate ball;
 bool noball = false;
 void sen_IRball();  //赤外線センサ(ボール位置をballに代入)
 
+//ラインセンサ
+#define LED 12
+#define intPin_line 3
+float lineLocate_t[16] = {0  ,45 ,90 ,135,180,-135,-90 ,-45 };
+Coordinate lineLocate[16];
+int rawData[8] = {0};
+volatile bool ifLine; //ラインあるなしフラグ
+bool ifLine_process; //ライン処理実行中フラグ
+void lineLocateCul(){
+  for(int i=0; i<16; i++){
+    lineLocate[i].R = 1;
+    lineLocate[i].T = lineLocate_t[i];
+    RTtoXY(&lineLocate[i]);
+  }
+}; //lineLocateの初期化 setup関数で実行
+void sen_line(); //ライン処理
+void getData_line(); //ラインデータ読み取り（ナノと通信）
+void int_line(); //ラインセンサ割り込み
+
 //ジャイロ
 Adafruit_BNO055 bno = Adafruit_BNO055(-1, 0x29);
 bool  nogyro = false;
@@ -59,8 +78,19 @@ void setup() {
   for (int i=0; i<8; i++){
     pinMode(motorPin[i], OUTPUT);
   }
+  
   //赤外線センサ場所の計算
   IRlocateCul();
+
+  //ラインセンサ通信
+  Serial1.begin(9600);
+  //ラインセンサ場所の計算、割り込み開始
+  lineLocateCul();
+  attachInterrupt(digitalPinToInterrupt(intPin_line),int_line,FALLING);
+  //センサのLEDを発光
+  pinMode(LED, OUTPUT);
+  digitalWrite(LED,HIGH);
+
   //ジャイロセンサ開始
   if(!bno.begin()){
     Serial.print("No gyro");
@@ -74,6 +104,7 @@ void loop() {
   Serial.println();
   Serial.println();
 
+  lifted();//持ち上げ確認
   gyro();//ジャイロ更新
   sen_IRball();//赤外線更新
   Serial.println((String)"ボール方向" + ball.T);
@@ -256,25 +287,85 @@ void sen_IRball(){
   
 }
 
+//ライン処理
+void sen_line(){
+
+}
+
+//ラインデータ読み取り（ナノと通信）
+void getData_line(){
+  int lowerData = 0; //0~7のセンサの値を並べた2進数を10進数になおしたもの
+  int upperData = 0; //8~15                  〃
+
+  Serial1.write(1); //ナノに送信
+  Serial1.flush();
+  while(!Serial1.available());
+  do{
+    lowerData = Serial1.read(); //帰ってきたデータ読み取り
+  }while(lowerData == -1);
+  Serial1.write(1); //ナノに送信
+  Serial1.flush();
+  while(!Serial1.available());
+  do{
+    upperData = Serial1.read(); //帰ってきたデータ読み取り
+  }while(upperData == -1);
+
+  Serial.println(lowerData);
+  Serial.println(upperData);//*/
+
+  //２進数に変えてデータ読み取り
+  for(int i=0; i<8; i++){
+    rawData[i] = lowerData % 2;
+    rawData[i+8] = upperData % 2;
+    lowerData = ( lowerData - rawData[i] ) / 2;
+    upperData = ( upperData - rawData[i+8] ) / 2;
+  }
+
+  /*for(int i=0; i<16; i++){
+    Serial.print(rawData[i]);
+    Serial.println();
+  }//*/
+}
+
+//ラインセンサ割り込み
+void int_line(){
+  noInterrupts();
+  //モーターをブレーキ
+  move_stop();
+  //ライン処理フラグ
+  ifLine = true;
+  interrupts();
+}
+
 //ジャイロセンサ更新(rotateに代入)
 void gyro(){
   if(!nogyro){
     imu::Vector<3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
-    rotate = euler.x() - firstRotation;
+    rotate = euler.x() - firstRotation; //はじめの値を引いておく
+    //0が前、-180~180になるよう調整
     if(rotate >= 180){
       rotate = rotate - 360;
     }
     rotate = -rotate;
   }
+  Serial.println((String) "方向" + rotate);
 }
 
 //持ち上げ確認
 void lifted(){
   if(!nogyro){
     imu::Vector<3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
-    if(euler.y() < -15){
+    if(euler.y() < -10){
+      //持ち上げてるとき消灯、止まる
+      digitalWrite(LED,LOW);
       move_stop();
-      while(euler.y() < -15) euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
+      //下ろすまで待つ
+      while(euler.y() < -10){
+        //Serial.println("lifted");
+        euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
+      }
+      //再開
+      digitalWrite(LED,HIGH);
     }
   }
 }
