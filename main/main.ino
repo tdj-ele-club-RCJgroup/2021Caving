@@ -61,6 +61,13 @@ void sen_line(); //ライン処理
 void getData_line(); //ラインデータ読み取り（ナノと通信）
 void int_line(); //ラインセンサ割り込み
 
+//超音波センサ
+uint8_t echoPin[4][2] = {{47,49},{48,46},{44,42},{43,45}};
+double distance[4] = {0};
+double speed_of_sound = 331.5; // 0℃の気温の速度
+double temp = 25;
+void echo(); //超音波センサ読み取り
+
 //ジャイロ
 Adafruit_BNO055 bno = Adafruit_BNO055(-1, 0x29);
 bool  nogyro = false;
@@ -91,6 +98,12 @@ void setup() {
   pinMode(LED, OUTPUT);
   digitalWrite(LED,HIGH);
 
+  //超音波センサピン宣言
+  for(int i=0; i<4; i++){
+    pinMode(echoPin[i][1], INPUT);
+    pinMode(echoPin[i][0], OUTPUT);
+  }
+
   //ジャイロセンサ開始
   if(!bno.begin()){
     Serial.print("No gyro");
@@ -106,6 +119,7 @@ void loop() {
 
   lifted();//持ち上げ確認
   gyro();//ジャイロ更新
+  echo();//超音波更新
   sen_IRball();//赤外線更新
   Serial.println((String)"ボール方向" + ball.T);
   Coordinate aim;      //進みたい目的地
@@ -336,6 +350,32 @@ void int_line(){
   ifLine = true;
   interrupts();
 }
+
+//超音波センサ読み取り
+void echo() {
+  double duration = 0;
+  temp = bno.getTemp();
+  for(int i=0; i<4; i++){
+    digitalWrite( echoPin[i][0], LOW ); 
+    delayMicroseconds(2); 
+    digitalWrite( echoPin[i][0], HIGH );
+    delayMicroseconds( 10 ); 
+    digitalWrite( echoPin[i][0], LOW );
+    duration = pulseIn( echoPin[i][1], HIGH ); // 往復にかかった時間が返却される[マイクロ秒]
+    //Serial.println(duration);
+
+    if (duration) {
+      duration = duration / 2; // 往路にかかった時間
+      distance[i] = duration * (speed_of_sound + temp * 3 / 5) * 100 / 1000000;
+    }else{
+      distance[i] = 0;
+    }
+
+    Serial.println((String)i + "\t" + distance[i]);
+  }
+  Serial.println();
+}
+
 
 //ジャイロセンサ更新(rotateに代入)
 void gyro(){
