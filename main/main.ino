@@ -3,6 +3,8 @@
 #include <Adafruit_BNO055.h>
 #include <utility/imumaths.h> //ジャイロセンサ用
 #include <ArduinoSort.h> //赤外線ソート用
+#include <QuickStats.h>
+QuickStats stats; //initialize an instance of this class
 
 //座標
 typedef struct {
@@ -121,11 +123,13 @@ void loop() {
   gyro();//ジャイロ更新
   echo();//超音波更新
   sen_IRball();//赤外線更新
-  Serial.println((String)"ボール方向" + ball.T);
-  Coordinate aim;      //進みたい目的地
-  aim.R = 1;
-  aim.T = ball.T;       //ボール方向
-  move_robot(aim.T);
+  if(!noball){
+    Serial.println((String)"ボール方向" + ball.T);
+    Coordinate aim;      //進みたい目的地
+    aim.R = 1;
+    aim.T = ball.T;       //ボール方向
+    move_robot(aim.T);
+  }
 
   delay(500);
 }
@@ -253,7 +257,7 @@ void move_stop(){
 //赤外線センサ(ボール位置をballに代入)
 void sen_IRball(){
   int rawdata[8] = {0};
-  uint8_t IRdata[8] = {0};
+  float IRdata[8] = {0};
   ball = {0,0,0,0};
 
   //読み取り(rawdata[]に代入)
@@ -267,7 +271,7 @@ void sen_IRball(){
     }else if(rawdata[i] > IRhigh[i]){
       IRdata[i] = range;
     }else{
-      IRdata[i] = (rawdata[i] - IRlow[i]) * (range) / (IRhigh[i] - IRlow[i])  + 1; //小数は切り捨てされる
+      IRdata[i] = (int) (rawdata[i] - IRlow[i]) * (range) / (IRhigh[i] - IRlow[i])  + 1; //小数は切り捨てされる
     }
   }
 
@@ -279,7 +283,16 @@ void sen_IRball(){
   for(int i=0; i<8; i++){
     Serial.print((String)"  " + IRdata[i]);
   }//*/
-
+  //ボールがないときを判定
+  if(stats.maximum(IRdata,8) == 0 || stats.CV(IRdata,8) <= 50){
+    noball = true;
+  }else{
+    noball = false;
+  }
+  if(noball)Serial.print("  noball");
+  Serial.print((String)"  変動係数" + stats.CV(IRdata,8));
+  Serial.print((String)"  最大値"   + stats.maximum(IRdata,8));
+  
   //ベクトルで角度を算出(ball.Tに代入)
   for(int i=0; i<8; i++){
     ball.X += IRdata[i] * IRlocate[i].X;
