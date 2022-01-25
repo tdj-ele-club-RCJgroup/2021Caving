@@ -25,9 +25,10 @@ void RTtoXY(Coordinate *Data){
 
 #define LED 12
 #define intPin_line 3
-float lineLocate_t[16] = {0  ,45 ,90 ,135,180,-135,-90 ,-45 };
+float lineLocate_t[16] = {0,  22.5, 45, 67.5, 90, 112.5,  135,  157.5,  180,  -157.5, -135, -112.5, -90,  -67.5,  -45,  -22.5};
 Coordinate lineLocate[16];
-int rawData[8] = {0};
+Coordinate n;
+int rawData[16] = {0};
 void lineLocateCul(){
   for(int i=0; i<16; i++){
     lineLocate[i].R = 1;
@@ -50,22 +51,22 @@ void setup(){
 }
 
 void loop(){
-  if(ifLine) getData_line(); ifLine = 0;
-  //Serial.println(digitalRead(intPin_line));
+  if(ifLine)getData_line();
+  if(digitalRead(intPin_line))ifLine = 0;
+  Serial.println(digitalRead(intPin_line));
 }
 
 void int_line(){
-  noInterrupts();
   //モーターをブレーキ
   
   //ライン処理フラグ
   ifLine = true;
-  interrupts();
 }
 
 void getData_line(){
   int upperData = 0;
   int lowerData = 0;
+  int lineNum = 0;
 
   Serial1.write(1);
   Serial1.flush();
@@ -86,12 +87,44 @@ void getData_line(){
   for(int i=0; i<8; i++){
     rawData[i] = lowerData % 2;
     rawData[i+8] = upperData % 2;
+    lineNum += rawData[i] + rawData[i+8];
     lowerData = ( lowerData - rawData[i] ) / 2;
     upperData = ( upperData - rawData[i+8] ) / 2;
   }
 
   for(int i=0; i<16; i++){
-    /*Serial.print(rawData[i]);
-    Serial.println();//*/
+    Serial.print((String)rawData[i]);
   }
+  Serial.println();//*/
+
+  //一つだけ反応してたら接線
+  //二つ以上反応してたら最小二乗法で直線
+  //線に垂直な向きに動く
+  //反応した点の個数
+  /*if(lineNum == 1){
+    for(int i=0; i<16; i++){
+      n.T = rawData[i] * -lineLocate.T[i];
+    }
+    n.R = 1;
+    RTtoXY(&n);
+  }else{
+    double Sx,Sy,Sxx,Sxy,a,b;
+
+    for(i=0;i<16;i++){
+      if(rawData[i]){
+        Sx += lineLocate.X[i];
+        Sy += lineLocate.Y[i];
+        Sxx += lineLocate.X[i]*lineLocate.X[i];　//2乗和
+        Sxy += lineLocate.X[i]*lineLocate.Y[i];
+      }
+    }
+
+    a = (Sx*Sy – lineNum*Sxy);
+    b = -(Sx*Sx – lineNum*Sxx);
+    c = (Sx*Sxy – Sxx*Sy);
+
+  }//*/
 }
+
+
+
