@@ -15,6 +15,8 @@ void setup() {
 void loop(){
   echo();
   delay(300);
+  Serial.println((String)"横" + "\t" + (distance[1]+distance[3]) );
+  Serial.println((String)"縦" + "\t" + (distance[0]+distance[2]) );
 }
 
 
