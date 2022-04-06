@@ -21,6 +21,7 @@ const uint8_t motorPin[8]         = {7,6,9,8,11,10,5,4};         //モーター�
 const float   motor_[4]           = {0, 0, 0, 0}; //モーターの中心からの距離[cm]
 const float   motor_character[4]  = {1.000, 1.000, 1.000, 1.000}; //モーターの誤差補正
 int   motor_PWM         = 255;  //0~255 出力するpwmの最大値
+int   motor_rotatePWM   = 100;  //回転時の速度
 float motor_delay_ratio = 12;   //1cm進むのに待つ時間[ms]
 void move_robot(float Theta);   //モータの出力計算(目標の方向)
 void move_rotate(float Theta);  //回転する（回転の中心、角度）
@@ -42,16 +43,19 @@ void IRlocateCul(){
   }
 }; //IRlocateの初期化 setup関数で実行
 Coordinate ball;
-bool noball = false;
+bool noball;
 void sen_IRball();  //赤外線センサ(ボール位置をballに代入)
 
 //ボール補足センサ
-#define capturePin 2
+#define capturePin 3
+#define capture_rate 300
 bool ballCapture();
 
 //ラインセンサ
 #define LED 12
 #define intPin_line 3
+// #define Line_interupts() (attachInterrupt(digitalPinToInterrupt(intPin_line),int_line,FALLING))
+// #define Line_noInterrupts() (detachInterrupt(digitalPinToInterrupt(intPin_line)))
 float lineLocate_t[16] = {0,  22.5, 45, 67.5, 90, 112.5,  135,  157.5,  180,  -157.5, -135, -112.5, -90,  -67.5,  -45,  -22.5};
 Coordinate lineLocate[16];
 int rawData[16] = {0};
@@ -100,7 +104,7 @@ void setup() {
   Serial1.begin(9600);
   //ラインセンサ場所の計算、割り込み開始
   lineLocateCul();
-  attachInterrupt(digitalPinToInterrupt(intPin_line),int_line,FALLING);
+  //Line_interupts();
   //センサのLEDを発光
   pinMode(LED, OUTPUT);
   digitalWrite(LED,HIGH);
@@ -124,25 +128,33 @@ void loop() {
   Serial.println();
   Serial.println();
 
-  //lifted();//持ち上げ確認
-  //sen_line();//ライン処理
+  lifted();//持ち上げ確認
+  sen_line();//ライン処理
   gyro();//ジャイロ更新
-  //echo();//超音波更新
+  echo();//超音波更新
+  sen_line();//ライン処理
   sen_IRball();//赤外線更新
 
   
-  if(fabsf(rotate) > 20){
+  /*if(fabsf(rotate) > 25){
     //回りすぎもどす
     move_rotate(0);
-  }/*else if(!noball){
-      //digitalWrite(36,HIGH);
-      Serial.println((String)"ボール方向" + ball.T * 1.5);
-      move_robot(ball.T * 1.5);
+  }//*/
+  if(ballCapture()){
+    Serial.println("ボール補足");
+    move_stop();
+  }else if(!noball){
+    //digitalWrite(36,HIGH);
+    Serial.println((String)"ボール追いかけ" + ball.T * 1.5);
+    move_robot(ball.T * 1.5);
+  }else{
+    //ボール失ったら超音波でもとの位置にもどる
   }
-/*  digitalWrite(13, HIGH);
+  
+  digitalWrite(13, HIGH);
   delay(1);
   digitalWrite(13, LOW);
-  delay(500);//*/
+  /*delay(1000);//*/
 }
 
 //ベクトルの変換
@@ -164,7 +176,14 @@ void RTtoXY(Coordinate *Data){
 
 //モータの出力計算(目標の方向)
 void move_robot(float Theta) {
-  //if(ifLine && !ifLine_process) return; //ラインが反応すると動かない
+  Serial.println((String)"モータ出力");
+  
+  //ラインが反応すると動かない
+  if(ifLine && !ifLine_process){
+    Serial.println((String)"ライン上禁止");
+    Serial.println();
+    return; 
+  }
   //digitalWrite(36,HIGH);
 
   Coordinate motor_mov; //座標軸を45度回転した後の座標を後で格納
@@ -221,6 +240,7 @@ void move_robot(float Theta) {
   }//*/
   
   //出力
+  move_off();
   for(int i = 0; i < 4; i++){
     if (V[i] > 0){
       analogWrite(motorPin[2*i], V[i]);
@@ -233,50 +253,58 @@ void move_robot(float Theta) {
     }
   }
   //digitalWrite(36,LOW);
+  Serial.println();
 }
 
 //回転する（角度）
 void move_rotate(float Theta) {
+  Serial.println((String)"回転");
   if(fabsf(Theta - rotate) > rot_ign && fabsf(Theta) < 100){
     if (rotate < Theta){  //正転
-      while(rotate < Theta){
+      //while(rotate < Theta){
         for(int i = 0; i < 4; i++){
-          analogWrite(motorPin[2*i], motor_PWM * motor_character[i]);
+          analogWrite(motorPin[2*i], motor_rotatePWM * motor_character[i]);
           analogWrite(motorPin[2*i+1],0);
-          Serial.println((String)(2*i) + ":" + (motor_PWM * motor_character[i]));
+          Serial.println((String)(2*i) + ":" + (motor_rotatePWM * motor_character[i]));
         }
         gyro();
-      }
+      //}
     }else{  //逆転
-      while(rotate > Theta){
+      //while(rotate > Theta){
         for(int i = 0; i < 4; i++){
           analogWrite(motorPin[2*i],  0);
-          analogWrite(motorPin[2*i+1], motor_PWM * motor_character[i]);
-          Serial.println((String)(2*i+1) + ":" + (motor_PWM * motor_character[i]));
+          analogWrite(motorPin[2*i+1], motor_rotatePWM * motor_character[i]);
+          Serial.println((String)(2*i+1) + ":" + (motor_rotatePWM * motor_character[i]));
         }
         gyro();
-      }
+      //}
     }
-    move_stop();
+    //move_stop();
   }
+  Serial.println();
 }
 
 //止まる
 void move_stop(){
+  Serial.println((String)"止まる");
   for(int i=0; i<8; i++){
     analogWrite(motorPin[i], 255);
   }
+  Serial.println();
 }
 
 //ドライバー出力をLOWにする
 void move_off(){
-    for(int i=0; i<8; i++){
+  Serial.println((String)"ドライバー出力をLOW");
+  for(int i=0; i<8; i++){
     analogWrite(motorPin[i], 0);
   }
+  Serial.println();
 }
 
 //赤外線センサ(ボール位置をballに代入)
 void sen_IRball(){
+  Serial.println((String)"赤外線センサ");
   int rawdata[8] = {0};
   float IRdata[8] = {0};
   ball = {0,0,0,0};
@@ -311,8 +339,8 @@ void sen_IRball(){
     noball = false;
   }
   if(noball)Serial.print("  noball");
-  Serial.print((String)"  変動係数" + stats.CV(IRdata,8));
-  Serial.print((String)"  最大値"   + stats.maximum(IRdata,8));
+  Serial.print((String)"変動係数" + stats.CV(IRdata,8));
+  Serial.println((String)"  最大値"   + stats.maximum(IRdata,8));
   
   //ベクトルで角度を算出(ball.Tに代入)
   for(int i=0; i<8; i++){
@@ -326,66 +354,82 @@ void sen_IRball(){
   //回転を含める
   ball.T = ball.T + rotate;
   RTtoXY(&ball);
-  /*Serial.print((String)"    rotate " + rotate);
-  Serial.print((String)"    ball.T " + ball.T);
-  Serial.println((String)"    ball.R " + ball.R);//*/
+  //Serial.print((String)"    rotate " + rotate);
+  Serial.println((String)"ball.T " + ball.T);
+  //Serial.println((String)"    ball.R " + ball.R);//*/
 
   //だいたいの距離を割り出す(ball.Rに代入)
   //sortArray(IRdata, 8);//IRdataを昇順で並び替え
-  
+  Serial.println();
 }
 
 //ボール補足センサ
 bool ballCapture(){
-  bool ifBall_capture = false;
-  ifBall_capture = digitalRead(capturePin);
-  return ifBall_capture;
+  Serial.println((String)"ボール補足センサ");
+  int cap_rawData;
+  cap_rawData = analogRead(capturePin);
+  Serial.println((String)"rawData" + cap_rawData);
+  if(cap_rawData > capture_rate){
+    Serial.println("ball");
+    Serial.println();
+    return 1;
+  }else{
+    Serial.println("noball");
+    Serial.println();
+    return 0;
+  }
 }
 
 //ライン処理
 void sen_line(){
+  Serial.println((String)"ライン処理");
   float back;
-  if(ifLine){
+  //Line_noInterrupts();
+  back = getData_line();
+  /*if(digitalRead(intPin_line)){
+    ifLine = 0;
+    Serial.println("noline");
+    //Line_interupts();
+  }else*/ if(!ifLine){
+    Serial.println("noline");
+  }else{
     digitalWrite(37,HIGH);
     ifLine_process = true;
-    Serial.println("ライン処理中");
-    //noInterrupts();
-    while(!digitalRead(intPin_line)){
-      back = getData_line();
-      move_robot(back);
-    }
-    Serial.println("ライン処理終了");
+    Serial.println("line");
+    move_off();
+    move_robot(back);
     ifLine_process = false;
-    ifLine = false;
     digitalWrite(37,LOW);
-    //interrupts();
+    //Line_interupts();
   }
+  Serial.println();
 }
 
 //ラインデータ読み取り（ナノと通信）
 float getData_line(){
-  int lowerData = 0; //0~7のセンサの値を並べた2進数を10進数になおしたもの
-  int upperData = 0; //8~15                  〃
-  Coordinate back;
+  Serial.println((String)"ラインデータ読み取り");
+  int upperData = 0;
+  int lowerData = 0;
   int lineNum = 0;
+  Coordinate back = {0,0,1,0}; //線をよけて進む向き
+  ifLine = false;
 
-  Serial1.write(1); //ナノに送信
+  Serial1.write(1);
   Serial1.flush();
   while(!Serial1.available());
   do{
-    lowerData = Serial1.read(); //帰ってきたデータ読み取り
+    lowerData = Serial1.read();
   }while(lowerData == -1);
-  Serial1.write(1); //ナノに送信
+  Serial1.write(1);
   Serial1.flush();
   while(!Serial1.available());
   do{
-    upperData = Serial1.read(); //帰ってきたデータ読み取り
+    upperData = Serial1.read();
   }while(upperData == -1);
 
-  Serial.println(lowerData);
+  /*Serial.println(lowerData);
   Serial.println(upperData);//*/
 
-  //２進数に変えてデータ読み取り
   for(int i=0; i<8; i++){
     rawData[i] = lowerData % 2;
     rawData[i+8] = upperData % 2;
@@ -393,44 +437,34 @@ float getData_line(){
     lowerData = ( lowerData - rawData[i] ) / 2;
     upperData = ( upperData - rawData[i+8] ) / 2;
   }
+  if(lineNum) ifLine = true;
 
   for(int i=0; i<16; i++){
-    Serial.print(rawData[i]);
+    if(rawData[i])Serial.println((String)i);
   }
   Serial.println();//*/
 
-  //一つだけ反応してたら接線
-  //二つ以上反応してたら最小二乗法で直線
-  //線に垂直な向きに動く
-  //反応した点の個数
-  if(lineNum){
-    for(int i=0; i<16; i++){
-      back.X += -(rawData[i] * lineLocate[i].X);
-      back.Y += -(rawData[i] * lineLocate[i].Y);
-    }
-    XYtoRT(&back);
-    
-    back.T = back.T + rotate;
-    RTtoXY(&back);
-
-    Serial.println((String)"back" + "\t" + back.T);
-    return back.T;
+  //ベクトルを足して線をよける方向を計算
+  for(int i=0; i<16; i++){
+    back.X += -(rawData[i] * lineLocate[i].X);
+    back.Y += -(rawData[i] * lineLocate[i].Y);
   }
-  return 0;
+  XYtoRT(&back);
+  if(lineNum) Serial.println((String)"back" + "\t" + back.T);
+  return back.T;
 }
 
-//ラインセンサ割り込み
+/*/ラインセンサ割り込み
 void int_line(){
-  //モーターをブレーキ
-  for(int i=0; i<8; i++){
-    analogWrite(motorPin[i], 255);
-  }
   //ラインあるなしフラグ
   ifLine = true;
-}
+  move_off();
+  digitalWrite(36,HIGH);
+}//*/
 
 //超音波センサ読み取り
 void echo() {
+  Serial.println((String)"超音波センサ読み取り");
   double duration = 0;
   for(int i=0; i<4; i++){
     digitalWrite( echoPin[i][0], LOW ); 
@@ -438,7 +472,7 @@ void echo() {
     digitalWrite( echoPin[i][0], HIGH );
     delayMicroseconds( 10 ); 
     digitalWrite( echoPin[i][0], LOW );
-    duration = pulseIn( echoPin[i][1], HIGH ); // 往復にかかった時間が返却される[マイクロ秒]
+    duration = pulseIn( echoPin[i][1], HIGH ,12000 ); // 往復にかかった時間が返却される[マイクロ秒]
     //Serial.println(duration);
 
     if (duration) {
@@ -456,6 +490,7 @@ void echo() {
 
 //ジャイロセンサ更新(rotateに代入)
 void gyro(){
+  Serial.println((String)"ジャイロセンサ更新");
   if(!nogyro){
     imu::Vector<3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
     rotate = euler.x() - firstRotation; //はじめの値を引いておく
@@ -466,23 +501,26 @@ void gyro(){
     rotate = -rotate;
   }
   Serial.println((String) "方向" + rotate);
+  Serial.println();
 }
 
 //持ち上げ確認
 void lifted(){
+  Serial.println((String)"持ち上げ確認");
   if(!nogyro){
     imu::Vector<3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
-    if(euler.y() < -10){
+    if(euler.z() < -19){
       //持ち上げてるとき消灯、止まる
       digitalWrite(LED,LOW);
       move_stop();
       //下ろすまで待つ
-      while(euler.y() < -10){
-        //Serial.println("lifted");
+      while(euler.z() < -19){
+        Serial.println("lifted");
         euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
       }
       //再開
       digitalWrite(LED,HIGH);
     }
   }
+  Serial.println();
 }
