@@ -52,7 +52,6 @@ void loop(){
 }
 
 float getData_line(){
-  int lineNum = 0;
   ifLine = false;
   int incomingByte = 0;
   float back_t = 0;
