@@ -54,23 +54,11 @@ bool ballCapture();
 //ラインセンサ
 #define LED 12
 #define intPin_line 3
-// #define Line_interupts() (attachInterrupt(digitalPinToInterrupt(intPin_line),int_line,FALLING))
-// #define Line_noInterrupts() (detachInterrupt(digitalPinToInterrupt(intPin_line)))
-float lineLocate_t[16] = {0,  22.5, 45, 67.5, 90, 112.5,  135,  157.5,  180,  -157.5, -135, -112.5, -90,  -67.5,  -45,  -22.5};
-Coordinate lineLocate[16];
 int rawData[16] = {0};
 volatile bool ifLine; //ラインあるなしフラグ
 bool ifLine_process; //ライン処理実行中フラグ
-void lineLocateCul(){
-  for(int i=0; i<16; i++){
-    lineLocate[i].R = 1;
-    lineLocate[i].T = lineLocate_t[i];
-    RTtoXY(&lineLocate[i]);
-  }
-}; //lineLocateの初期化 setup関数で実行
 void sen_line(); //ライン処理
 float getData_line(); //ラインデータ読み取り（ナノと通信）
-void int_line(); //ラインセンサ割り込み
 
 //超音波センサ
 uint8_t echoPin[4][2] = {{47,49},{48,46},{44,42},{43,45}};
@@ -102,9 +90,6 @@ void setup() {
 
   //ラインセンサ通信
   Serial1.begin(9600);
-  //ラインセンサ場所の計算、割り込み開始
-  lineLocateCul();
-  //Line_interupts();
   //センサのLEDを発光
   pinMode(LED, OUTPUT);
   digitalWrite(LED,HIGH);
@@ -125,7 +110,7 @@ void setup() {
 }
   
 void loop() {
-  Serial.println();
+  Serial.println(); 
   Serial.println();
 
   lifted();//持ち上げ確認
@@ -135,7 +120,8 @@ void loop() {
   sen_line();//ライン処理
   sen_IRball();//赤外線更新
 
-  
+  noball = false;
+  ball.T = -60;
   /*if(fabsf(rotate) > 25){
     //回りすぎもどす
     move_rotate(0);
@@ -146,7 +132,7 @@ void loop() {
   }else if(!noball){
     //digitalWrite(36,HIGH);
     Serial.println((String)"ボール追いかけ" + ball.T * 1.5);
-    move_robot(ball.T * 1.5);
+    move_robot(ball.T * 3 / 2);
   }else{
     //ボール失ったら超音波でもとの位置にもどる
   }
@@ -190,7 +176,7 @@ void move_robot(float Theta) {
   float V[4]; //モーターごとの動かす量
 
   //回転を機体からみたものに戻す
-  Theta = Theta - rotate;
+  Theta = Theta - rotate;//*/
   //原点を機体の中心からモーターの中心に変換
 
   //軸を45度回転し、モーターの動かす量を求める
@@ -383,14 +369,9 @@ bool ballCapture(){
 //ライン処理
 void sen_line(){
   Serial.println((String)"ライン処理");
-  float back;
-  //Line_noInterrupts();
+  float back = 0;
   back = getData_line();
-  /*if(digitalRead(intPin_line)){
-    ifLine = 0;
-    Serial.println("noline");
-    //Line_interupts();
-  }else*/ if(!ifLine){
+  if(!ifLine){
     Serial.println("noline");
   }else{
     digitalWrite(37,HIGH);
@@ -400,7 +381,6 @@ void sen_line(){
     move_robot(back);
     ifLine_process = false;
     digitalWrite(37,LOW);
-    //Line_interupts();
   }
   Serial.println();
 }
@@ -408,49 +388,42 @@ void sen_line(){
 //ラインデータ読み取り（ナノと通信）
 float getData_line(){
   Serial.println((String)"ラインデータ読み取り");
-  int upperData = 0;
-  int lowerData = 0;
   int lineNum = 0;
-  Coordinate back = {0,0,1,0}; //線をよけて進む向き
   ifLine = false;
+  Coordinate back = {0};
+  //float back_t = 0;
 
+  while (Serial1.available()) Serial1.read(); //バッファを消す
   Serial1.write(1);
   Serial1.flush();
-  while(!Serial1.available());
-  do{
-    lowerData = Serial1.read();
-  }while(lowerData == -1);
+  for(int i=0; i<1;){
+    if(Serial1.available()){
+      ifLine = Serial1.read();
+      i++;
+    }/*else{
+      Serial1.write(1);
+      Serial1.flush();
+    }//*/
+  }
+  Serial.println((String)"ifline" + "\t" + ifLine);
+
+  while (Serial1.available()) Serial1.read(); //バッファを消す
   Serial1.write(1);
   Serial1.flush();
-  while(!Serial1.available());
-  do{
-    upperData = Serial1.read();
-  }while(upperData == -1);
-
-  /*Serial.println(lowerData);
-  Serial.println(upperData);//*/
-
-  for(int i=0; i<8; i++){
-    rawData[i] = lowerData % 2;
-    rawData[i+8] = upperData % 2;
-    lineNum += rawData[i] + rawData[i+8];
-    lowerData = ( lowerData - rawData[i] ) / 2;
-    upperData = ( upperData - rawData[i+8] ) / 2;
+  if(ifLine){
+    for(int i=0; i<4;){
+      if(Serial1.available()){
+        *((byte*)&back.T + i++) = Serial1.read();
+        //Serial.println("here");
+      }
+    }
+    Serial1.write(1);
+    Serial1.flush();//*/
   }
-  if(lineNum) ifLine = true;
-
-  for(int i=0; i<16; i++){
-    if(rawData[i])Serial.println((String)i);
-  }
-  Serial.println();//*/
-
-  //ベクトルを足して線をよける方向を計算
-  for(int i=0; i<16; i++){
-    back.X += -(rawData[i] * lineLocate[i].X);
-    back.Y += -(rawData[i] * lineLocate[i].Y);
-  }
-  XYtoRT(&back);
-  if(lineNum) Serial.println((String)"back" + "\t" + back.T);
+  Serial.println((String)"back" + "\t" + back.T);
+  //回転を含める
+  back.T = back.T + rotate;
+  RTtoXY(&back);
   return back.T;
 }
 
