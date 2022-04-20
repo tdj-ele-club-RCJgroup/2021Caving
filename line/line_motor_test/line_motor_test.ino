@@ -121,18 +121,18 @@ void setup() {
 }
   
 void loop() {
-  //gyro();
+  gyro();
   //if(digitalRead(intPin_line))ifLine = 0;
-  getData_line();
-  Serial.println(digitalRead(2));
+  /*getData_line();
+  Serial.println(digitalRead(2));//*/
 
   for(int i=0; i<8; i=i+2){
     analogWrite(motorPin[i],255);
     analogWrite(motorPin[i+1],0);
   }
-  //gyro();
-  getData_line();
-  Serial.println(digitalRead(2));
+  gyro();
+  /*getData_line();
+  Serial.println(digitalRead(2));//*/
   /*for(int i=0; i<8; i=i+2){
     analogWrite(motorPin[i],255);
     analogWrite(motorPin[i+1],255);
@@ -149,9 +149,9 @@ void loop() {
     analogWrite(motorPin[i],255);
     analogWrite(motorPin[i+1],255);
   }//*/
-  //gyro();//*/
-  getData_line();
-  Serial.println(digitalRead(2));
+  gyro();//*/
+  /*getData_line();
+  Serial.println(digitalRead(2));//*/
   delay(1000);//*/
 }
 
