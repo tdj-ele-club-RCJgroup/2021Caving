@@ -1,5 +1,5 @@
 #define ballCapture 3
-#define capture_rate 800
+#define capture_rate 300
 
 void setup()
 {
@@ -10,12 +10,12 @@ void loop()
 {
   int cap_rawData;
   cap_rawData = analogRead(ballCapture);
-  Serial.println((String)"rawData" + cap_rawData);
+  Serial.print((String)"rawData" + cap_rawData);
   if(cap_rawData > capture_rate){
-    Serial.println("ball");
+    Serial.println(" ball");
     //return 1;
   }else{
-    Serial.println("noball");
+    Serial.println(" noball");
     //return 0;
   }
 }
