@@ -20,13 +20,27 @@ void RTtoXY(Coordinate *Data);      //    〃
 const uint8_t motorPin[8]         = {7,6,9,8,11,10,5,4};         //モーターの制御ピン
 const float   motor_[4]           = {0, 0, 0, 0}; //モーターの中心からの距離[cm]
 const float   motor_character[4]  = {1.000, 1.000, 1.000, 1.000}; //モーターの誤差補正
-int   motor_PWM         = 255;  //0~255 出力するpwmの最大値
+int   motor_PWM         = 240;  //0~255 出力するpwmの最大値
 int   motor_rotatePWM   = 100;  //回転時の速度
 float motor_delay_ratio = 12;   //1cm進むのに待つ時間[ms]
 void move_robot(float Theta);   //モータの出力計算(目標の方向)
-void move_rotate(float Theta);  //回転する（回転の中心、角度）
+void mov(float V[], float Delay);
+//void move_rotate(float Theta);  //回転する（回転の中心、角度）
 void move_stop();               //止まる
 void move_off();                //ドライバーへの出力をLOWにする
+  float test0[4] = {255,-225,-225,255};
+  
+  float test[4] = {-225,0,0,-225};//右
+  float test1[4] = {0,225,225,0};
+  
+  float test6[4] = {225,0,0,225};//左
+  float test7[4] = {0,-225,-225,0};
+  
+  float test2[4] = {225,225,0,0};//後ろ
+  float test3[4] = {0,0,-225,-225};
+  
+  float test4[4] = {225,0,-225,0};
+  float test5[4] = {0,225,0,-225};
 
 //赤外線センサ
 #define range 20
@@ -46,10 +60,10 @@ Coordinate ball;
 bool noball;
 void sen_IRball();  //赤外線センサ(ボール位置をballに代入)
 
-//ボール補足センサ
+/*/ボール補足センサ
 #define capturePin 3
 #define capture_rate 300
-bool ballCapture();
+bool ballCapture();//*/
 
 //ラインセンサ
 #define LED 12
@@ -60,21 +74,21 @@ bool ifLine_process; //ライン処理実行中フラグ
 void sen_line(); //ライン処理
 float getData_line(); //ラインデータ読み取り（ナノと通信）
 
-//超音波センサ
+/*/超音波センサ
 uint8_t echoPin[4][2] = {{47,49},{48,46},{44,42},{43,45}};
 const double speed_of_sound = 331.5; // 0℃の気温の速度
 const double temp = 25;
 double distance[4] = {0};
-void echo(); //超音波センサ読み取り
+void echo(); //超音波センサ読み取り*/
 
-//ジャイロ
+/*/ジャイロ
 Adafruit_BNO055 bno = Adafruit_BNO055(-1, 0x29);
 bool  nogyro = false;
 float firstRotation = 0; //はじめの値を記録
-float rotate = 0;  //0が前向き
-const float rot_ign = 5;  //多少の傾きは無視
+*/float rotate = 0;  //0が前向き
+/*const float rot_ign = 5;  //多少の傾きは無視
 void gyro();  //ジャイロセンサ更新(rotateに代入)
-void lifted(); //持ち上げ確認
+void lifted(); //持ち上げ確認*/
 
 
 void setup() {
@@ -84,6 +98,11 @@ void setup() {
   for (int i=0; i<8; i++){
     pinMode(motorPin[i], OUTPUT);
   }
+
+  //とりあえず回転
+  //float test1[4] = {0,-225,-225,0};
+  mov(test6,50);
+  move_stop();
   
   //赤外線センサ場所の計算
   IRlocateCul();
@@ -94,42 +113,78 @@ void setup() {
   pinMode(LED, OUTPUT);
   digitalWrite(LED,HIGH);
 
-  //超音波センサピン宣言
+  /*/超音波センサピン宣言
   for(int i=0; i<4; i++){
     pinMode(echoPin[i][1], INPUT);
     pinMode(echoPin[i][0], OUTPUT);
-  }
+  }*/
 
-  //ジャイロセンサ開始
+  /*/ジャイロセンサ開始
   if(!bno.begin()){
     Serial.print("No gyro");
     nogyro = true;
   };
   imu::Vector<3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
-  firstRotation = euler.x();
+  firstRotation = euler.x();*/
 }
   
 void loop() {
   Serial.println(); 
   Serial.println();
 
-  lifted();//持ち上げ確認
+  //lifted();//持ち上げ確認
   sen_line();//ライン処理
-  gyro();//ジャイロ更新
-  echo();//超音波更新
-  sen_line();//ライン処理
+  //move_off();
+  //gyro();//ジャイロ更新
+  //echo();//超音波更新
+  //sen_line();//ライン処理
+  //move_off();
   sen_IRball();//赤外線更新
 
-  noball = false;
-  ball.T = -60;
-  /*if(fabsf(rotate) > 25){
-    //回りすぎもどす
-    move_rotate(0);
-  }//*/
-  if(ballCapture()){
-    Serial.println("ボール補足");
-    move_stop();
-  }else if(!noball){
+  if(fabsf(ball.T) < 10){
+      Serial.println((String)"ボール追いかけa" + ball.T * 1.1);
+      move_robot(ball.T * 11 /10);
+  }else{
+  ball.Y = 0;
+  XYtoRT(&ball);
+  move_robot(ball.T);
+  }
+  /*Coordinate Goal, ballGoal;
+  Goal.X = ((distance[1] + distance[3]) / 2 ) - distance[1];
+  Goal.Y = distance[2];
+  XYtoRT(&Goal);
+  ballGoal.X = Goal.X + ball.X;
+  ballGoal.Y = Goal.Y + ball.Y;
+  XYtoRT(&ballGoal);*/
+
+/*if(!noball){
+    if(fabsf(ball.T) < 10){
+      Serial.println((String)"ボール追いかけa" + ball.T * 1.1);
+      move_robot(ball.T * 11 /10);
+    }else if(IRdataMax == 1){
+      //digitalWrite(36,HIGH);
+      Serial.println((String)"ボール追いかけb" + ball.T);
+      move_robot(ball.T);
+    }else if(IRdataMax == 2){
+      Serial.println((String)"ボール追いかけc" + ball.T * 1.1);
+      move_robot(ball.T * 11 / 10);
+    }else if(/*2 < IRdataMax && *//*IRdataMax < 8) {
+      Serial.println((String)"ボール追いかけd" + ball.T * 1.3);
+      move_robot(ball.T * 13 / 10);
+    }else if(IRdataMax < 16){
+      Serial.println((String)"ボール追いかけe" + ball.T * 1.5);
+      move_robot(ball.T * 3 /2);
+    }else{
+      Serial.println((String)"ボール追いかけe" + ball.T * 1.9);
+      move_robot(ball.T * 19 /10);
+    }
+  }else{
+    move_off();
+    //ボール失ったら超音波でもとの位置にもどる
+  }*/
+
+
+  /*if(!noball){
     //digitalWrite(36,HIGH);
     Serial.println((String)"ボール追いかけ" + ball.T * 1.5);
     move_robot(ball.T * 3 / 2);
@@ -226,6 +281,7 @@ void move_robot(float Theta) {
   }//*/
   
   //出力
+  move_stop();
   move_off();
   for(int i = 0; i < 4; i++){
     if (V[i] > 0){
@@ -242,7 +298,42 @@ void move_robot(float Theta) {
   Serial.println();
 }
 
-//回転する（角度）
+//モーター関数用
+void mov(float V[], float Delay){
+
+  //ラインが反応すると動かない
+  if(ifLine && !ifLine_process){
+    Serial.println((String)"ライン上禁止");
+    Serial.println();
+    return; 
+  }
+
+  //プラスとマイナスを分ける
+  uint8_t pin[8];
+  for(int i=0; i<4; i++){
+    int j = i*2;
+    if (V[i] > 0){pin[j] = 0; pin[j+1] = 1;}
+    else {pin[j] = 1; pin[j+1] = 0; V[i] = -V[i];}
+    Serial.print(pin[j] + j);
+    Serial.print(":");
+    Serial.println(V[i] /* motor_PWM */ * motor_character[i]);
+  }
+
+  //出力
+  const unsigned long startTime_us = millis();
+  do{
+    for(int i=0; i<4; i++){
+      int j = i*2;
+      analogWrite(motorPin[pin[j]   + j],  V[i] /* motor_PWM*/ * motor_character[i]);   //動かす
+      analogWrite(motorPin[pin[j+1] + j],  0);
+    }
+  } while((millis() - startTime_us) < Delay * motor_delay_ratio);
+  
+  Serial.print("delay_value ");
+  Serial.println(Delay);//*/
+}
+
+/*/回転する（角度）
 void move_rotate(float Theta) {
   Serial.println((String)"回転");
   if(fabsf(Theta - rotate) > rot_ign && fabsf(Theta) < 100){
@@ -268,7 +359,7 @@ void move_rotate(float Theta) {
     //move_stop();
   }
   Serial.println();
-}
+}//*/
 
 //止まる
 void move_stop(){
@@ -349,7 +440,7 @@ void sen_IRball(){
   Serial.println();
 }
 
-//ボール補足センサ
+/*/ボール補足センサ
 bool ballCapture(){
   Serial.println((String)"ボール補足センサ");
   int cap_rawData;
@@ -364,7 +455,7 @@ bool ballCapture(){
     Serial.println();
     return 0;
   }
-}
+}//*/
 
 //ライン処理
 void sen_line(){
@@ -435,7 +526,7 @@ void int_line(){
   digitalWrite(36,HIGH);
 }//*/
 
-//超音波センサ読み取り
+/*/超音波センサ読み取り
 void echo() {
   Serial.println((String)"超音波センサ読み取り");
   double duration = 0;
@@ -459,9 +550,9 @@ void echo() {
   }
   Serial.println();
 }
+*/
 
-
-//ジャイロセンサ更新(rotateに代入)
+/*/ジャイロセンサ更新(rotateに代入)
 void gyro(){
   Serial.println((String)"ジャイロセンサ更新");
   if(!nogyro){
@@ -475,9 +566,9 @@ void gyro(){
   }
   Serial.println((String) "方向" + rotate);
   Serial.println();
-}
+}//*/
 
-//持ち上げ確認
+/*/持ち上げ確認
 void lifted(){
   Serial.println((String)"持ち上げ確認");
   if(!nogyro){
@@ -496,4 +587,4 @@ void lifted(){
     }
   }
   Serial.println();
-}
+}//*/

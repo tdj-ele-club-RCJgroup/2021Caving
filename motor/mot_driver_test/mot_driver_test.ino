@@ -8,18 +8,18 @@ void setup(){
 }
 
 void loop() {
-        analogWrite(motorPin[6],255);
-        analogWrite(motorPin[6+1],0);
+        analogWrite(motorPin[2],255);
+        analogWrite(motorPin[2+1],0);
     delay(1000);
-        analogWrite(motorPin[6],255);
-        analogWrite(motorPin[6+1],255);
+        analogWrite(motorPin[2],255);
+        analogWrite(motorPin[2+1],255);
     
     delay(500);
-        analogWrite(motorPin[6],0);
-        analogWrite(motorPin[6+1],255);
+        analogWrite(motorPin[2],0);
+        analogWrite(motorPin[2+1],255);
     
     delay(1000);
-        analogWrite(motorPin[6],255);
-        analogWrite(motorPin[6+1],255);
+        analogWrite(motorPin[2],255);
+        analogWrite(motorPin[2+1],255);
     delay(500);
 }

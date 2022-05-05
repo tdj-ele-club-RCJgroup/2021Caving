@@ -6,7 +6,7 @@ typedef struct {
 } Coordinate;
 
 //モーター
-const uint8_t motorPin[8]         = {6,7,8,9,10,11,4,5};         //モーターの制御ピン
+const uint8_t motorPin[8]         = {7,6,9,8,11,10,5,4};         //モーターの制御ピン
 const float   motor_[4]           = {0, 0, 0, 0}; //モーターの中心からの距離[cm]
 const float   motor_character[4]  = {1.000, 1.000, 1.000, 1.000}; //モーターの誤差補正
 
@@ -33,31 +33,37 @@ void loop() {
   Coordinate aim;      //進みたい目的地
   aim.R = 1;
   aim.T = 0.5;       //前方向
-  move_robot(aim.T);
+  move_robot(-38);
 }
 
 //ベクトルの変換
 void XYtoRT(Coordinate *Data){
   Data->R = sqrt(pow(Data->X, 2.0) + pow(Data->Y, 2.0));
-  Data->T = atan2(Data->Y, Data->X) / M_PI;
+  Data->T = atan2(Data->Y, Data->X) * 180 / M_PI  -  90;
+  if(-275 <= Data->T && Data->T <= -180){
+    Data->T = Data->T + 360;
+  }
 }
 void RTtoXY(Coordinate *Data){
-  Data->X = Data->R * cos(Data->T * M_PI);
-  Data->Y = Data->R * sin(Data->T * M_PI);
+  Data->Y = Data->R * sin((Data->T + 90) / 180 * M_PI);
+  Data->X = Data->R * cos((Data->T + 90) / 180 * M_PI);
+  Data->T = fmodf(Data->T + 720 , 360);
+  if(Data->T > 180){
+    Data->T = Data->T - 360;
+  }
 }
 
 //モータの出力計算(目標の方向)
 void move_robot(float Theta) {
+  Serial.println((String)"モータ出力");
+
   Coordinate motor_mov; //座標軸を45度回転した後の座標を後で格納
   float V[4]; //モーターごとの動かす量
-
-  //回転を機体からみたものに戻す
-  //原点を機体の中心からモーターの中心に変換
 
   //軸を45度回転し、モーターの動かす量を求める
   motor_mov.R = 1;
   Serial.println((String)"motor_mov.R = " + motor_mov.R);
-  motor_mov.T = Theta + 0.25;
+  motor_mov.T = Theta + 45;
   Serial.println((String)"motor_mov.T = " + motor_mov.T);
   RTtoXY(&motor_mov);
 
@@ -69,21 +75,21 @@ void move_robot(float Theta) {
 
   //delay_value = motor_mov.R;  //進む距離
 
-   Serial.println();
+  /* Serial.println();
   for(int i=0; i<4; i++){
     Serial.print("abV");
     Serial.print(i);
     Serial.print(" ");
     Serial.println(V[i]);
-  }
+  }//*/
 
   //V[ ]の最大値を1にする
   if(fabsf(V[0]) >= fabsf(V[1])){
     float maximum = fabsf(V[0]);
     for(int i = 0;i < 4; i++){
       V[i] = V[i] / maximum * motor_PWM * motor_character[i];
-      Serial.print("|V[0]| >= |V[1]|    : ");
-      Serial.println((String)"V[" + i + "]= " + V[i]);
+      /*Serial.print("|V[0]| >= |V[1]|    : ");
+      Serial.println((String)"V[" + i + "]= " + V[i]);//*/
     }
   }else{
     float maximum = fabsf(V[1]);
@@ -98,20 +104,23 @@ void move_robot(float Theta) {
     Serial.print(i);
     Serial.print(" ");
     Serial.println(V[i]);
-  }
+  }//*/
   
   //出力
+  mov_stop();
   for(int i = 0; i < 4; i++){
     if (V[i] > 0){
       analogWrite(motorPin[2*i], V[i]);
       analogWrite(motorPin[2*i+1],0);
-      Serial.println((String)motorPin[2*i] + ":" + V[i]);
+      //Serial.println((String)(2*i) + ":" + V[i]);
     }else{
       analogWrite(motorPin[2*i],  0);
       analogWrite(motorPin[2*i+1],-V[i]);
-      Serial.println((String)motorPin[2*i+1] + ":" + -V[i]);
+      //Serial.println((String)(2*i+1) + ":" + -V[i]);
     }
   }
+  //digitalWrite(36,LOW);
+  Serial.println();
 }
 
 //止まる

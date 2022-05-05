@@ -3,7 +3,7 @@
   /*////////////////////////////
 
 //モーター
-const uint8_t motorPin[8]         = {6,7,8,9,10,11,4,5};         //モーターの制御ピン
+const uint8_t motorPin[8]         = {7,6,9,8,10,11,5,4};         //モーターの制御ピン
 const float   motor_[4]           = {0, 0, 0, 0}; //モーターの中心からの距離[cm]
 const float   motor_character[4]  = {0.900, 1.000, 1.000, 0.900}; //モーターの誤差補正
 //int   motor_PWM         = 255;  //0~255のpwmの基準の値
@@ -33,14 +33,14 @@ void setup() {
   /*////////////////////////////
   
 void loop() {
-  float test0[4] = {255,-225,-225,255};
-  float test[4] = {225,0,0,225};
+  float test0[4] = {225,225,200,200};
+  float test[4] = {-225,0,0,-225};
   float test1[4] = {0,-225,-225,0};
   float test2[4] = {225,225,0,0};
   float test3[4] = {0,0,-225,-225};
   float test4[4] = {225,0,-225,0};
   float test5[4] = {0,225,0,-225};
-  mov(test0,200);
+  mov(test0,500);
   mov_stop();
   delay(1000);
   /*mov(test3,200);

@@ -21,7 +21,7 @@ const uint8_t motorPin[8]         = {7,6,9,8,11,10,5,4};         //モーター�
 const float   motor_[4]           = {0, 0, 0, 0}; //モーターの中心からの距離[cm]
 const float   motor_character[4]  = {1.000, 1.000, 1.000, 1.000}; //モーターの誤差補正
 int   motor_PWM         = 255;  //0~255 出力するpwmの最大値
-int   motor_rotatePWM   = 100;  //回転時の速度
+int   motor_rotatePWM   = 150;  //回転時の速度
 float motor_delay_ratio = 12;   //1cm進むのに待つ時間[ms]
 void move_robot(float Theta);   //モータの出力計算(目標の方向)
 void move_rotate(float Theta);  //回転する（回転の中心、角度）
@@ -45,6 +45,7 @@ void IRlocateCul(){
 Coordinate ball;
 bool noball;
 void sen_IRball();  //赤外線センサ(ボール位置をballに代入)
+float IRdataMax;
 
 //ボール補足センサ
 #define capturePin 3
@@ -53,10 +54,12 @@ bool ballCapture();
 
 //ラインセンサ
 #define LED 12
+//#define LED 13
 #define intPin_line 3
 int rawData[16] = {0};
 volatile bool ifLine; //ラインあるなしフラグ
 bool ifLine_process; //ライン処理実行中フラグ
+float bfback_line = 0; //ラインの記憶で自分位置を推定
 void sen_line(); //ライン処理
 float getData_line(); //ラインデータ読み取り（ナノと通信）
 
@@ -71,7 +74,7 @@ void lifted(); //持ち上げ確認
 
 
 void setup() {
-  Serial.begin(9600);
+  //Serial.begin(9600);
 
   //モーターのデジタルピン宣言
   for (int i=0; i<8; i++){
@@ -103,27 +106,54 @@ void loop() {
   lifted();//持ち上げ確認
   sen_line();//ライン処理
   gyro();//ジャイロ更新
-  sen_line();//ライン処理
-  sen_IRball();//赤外線更新
+  //sen_line();//ライン処理
 
-  noball = false;
-  ball.T = -60;
-  /*if(fabsf(rotate) > 25){
-    //回りすぎもどす
+  
+  sen_IRball();//赤外線更新
+  //move_off();
+  //delay(1);
+  if(fabsf(rotate) > 40){
+    //アウトオブバウンズ復帰時 回転もどす
     move_rotate(0);
-  }//*/
-  if(ballCapture()){
+  /*}else if(ballCapture() && fabsf(ball.T) < 10){
     Serial.println("ボール補足");
-    move_stop();
+    //右よりか左よりか前にボールを運ぶ
+    move_robot(0);*/
+    /*if(fabsf(bfback_line) < 45 || 135 < fabsf(bfback_line)){
+      move_robot(0);
+    }else if(bfback_line > 0){ //左
+      move_robot(25);
+    }else{
+      move_robot(-25);
+    }*/
   }else if(!noball){
-    //digitalWrite(36,HIGH);
-    Serial.println((String)"ボール追いかけ" + ball.T * 1.5);
-    move_robot(ball.T * 3 / 2);
+    if(fabsf(ball.T) < 10){
+      Serial.println((String)"ボール追いかけa" + ball.T * 1.1);
+      move_robot(ball.T * 11 /10);
+    }else if(IRdataMax == 1){
+      //digitalWrite(36,HIGH);
+      Serial.println((String)"ボール追いかけb" + ball.T);
+      move_robot(ball.T);
+    }else if(IRdataMax == 2){
+      Serial.println((String)"ボール追いかけc" + ball.T * 1.1);
+      move_robot(ball.T * 11 / 10);
+    }else if(/*2 < IRdataMax && */IRdataMax < 8) {
+      Serial.println((String)"ボール追いかけd" + ball.T * 1.3);
+      move_robot(ball.T * 13 / 10);
+    }else if(IRdataMax < 16){
+      Serial.println((String)"ボール追いかけe" + ball.T * 1.5);
+      move_robot(ball.T * 3 /2);
+    }else{
+      Serial.println((String)"ボール追いかけe" + ball.T * 1.9);
+      move_robot(ball.T * 19 /10);
+    }
   }else{
+    move_off();
     //ボール失ったら超音波でもとの位置にもどる
   }
   
-  digitalWrite(13, HIGH);
+  //sen_line();//ライン処理
+  /*digitalWrite(13, HIGH);
   delay(1);
   digitalWrite(13, LOW);
   /*delay(1000);//*/
@@ -164,6 +194,32 @@ void move_robot(float Theta) {
   //回転を機体からみたものに戻す
   Theta = Theta - rotate;//*/
   //原点を機体の中心からモーターの中心に変換
+
+  if(45 - 8 < Theta  && Theta < 45 + 8){
+    if(Theta <= 45){
+      Theta = 45 - 10;
+    }else{
+      Theta = 45 + 10;
+    }
+  }else if (-45 - 8 < Theta  && Theta < -45 + 8){
+    if(Theta <= -45){
+      Theta = -45 - 10;
+    }else{
+      Theta = -45 + 10;
+    }
+  }else if (135 - 8 < Theta  && Theta < 135 + 8){
+    if(Theta <= 135){
+      Theta = 135 - 10;
+    }else{
+      Theta = 135 + 10;
+    }
+  }else if (-135 - 8 < Theta  && Theta < -135 + 8){
+    if(Theta <= -135){
+      Theta = -135 - 10;
+    }else{
+      Theta = -135 + 10;
+    }
+  }
 
   //軸を45度回転し、モーターの動かす量を求める
   motor_mov.R = 1;
@@ -212,6 +268,7 @@ void move_robot(float Theta) {
   }//*/
   
   //出力
+  move_stop();
   move_off();
   for(int i = 0; i < 4; i++){
     if (V[i] > 0){
@@ -231,27 +288,28 @@ void move_robot(float Theta) {
 //回転する（角度）
 void move_rotate(float Theta) {
   Serial.println((String)"回転");
+  move_off();
   if(fabsf(Theta - rotate) > rot_ign && fabsf(Theta) < 100){
     if (rotate < Theta){  //正転
-      //while(rotate < Theta){
-        for(int i = 0; i < 4; i++){
+        for(int i = 1; i <= 2; i++){
           analogWrite(motorPin[2*i], motor_rotatePWM * motor_character[i]);
           analogWrite(motorPin[2*i+1],0);
           Serial.println((String)(2*i) + ":" + (motor_rotatePWM * motor_character[i]));
         }
+      while(rotate < Theta - 40){
         gyro();
-      //}
+      }
     }else{  //逆転
-      //while(rotate > Theta){
-        for(int i = 0; i < 4; i++){
+        for(int i = 1; i <= 2; i++){
           analogWrite(motorPin[2*i],  0);
           analogWrite(motorPin[2*i+1], motor_rotatePWM * motor_character[i]);
           Serial.println((String)(2*i+1) + ":" + (motor_rotatePWM * motor_character[i]));
         }
+      while(rotate > Theta + 40){
         gyro();
-      //}
+      }
     }
-    //move_stop();
+    move_stop();
   }
   Serial.println();
 }
@@ -284,6 +342,7 @@ void sen_IRball(){
   //読み取り(rawdata[]に代入)
   for(int i=0; i<8; i++){
     rawdata[i] = analogRead(IRpin[i]);
+    Serial.println("ww");
   }
   //値の範囲でで分ける(IRdata[]に代入)
   for(int i=0; i<8; i++){
@@ -310,9 +369,11 @@ void sen_IRball(){
   }else{
     noball = false;
   }
+  IRdataMax = stats.maximum(IRdata,8);
   if(noball)Serial.print("  noball");
   Serial.print((String)"変動係数" + stats.CV(IRdata,8));
-  Serial.println((String)"  最大値"   + stats.maximum(IRdata,8));
+  Serial.println((String)"  最大値"   + IRdataMax);
+  Serial.println((String)"  最少値"   + stats.minimum(IRdata,8));
   
   //ベクトルで角度を算出(ball.Tに代入)
   for(int i=0; i<8; i++){
@@ -332,6 +393,7 @@ void sen_IRball(){
 
   //だいたいの距離を割り出す(ball.Rに代入)
   //sortArray(IRdata, 8);//IRdataを昇順で並び替え
+  
   Serial.println();
 }
 
@@ -367,6 +429,7 @@ void sen_line(){
     move_robot(back);
     ifLine_process = false;
     digitalWrite(37,LOW);
+    bfback_line = back;
   }
   Serial.println();
 }
